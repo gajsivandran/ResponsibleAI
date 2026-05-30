@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tutor Response Judge</title>
 
-    <!-- React and Babel loaded from CDNs so this works as a simple GitHub Page -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <style>
       * {
         box-sizing: border-box;
@@ -90,7 +85,6 @@
         text-transform: uppercase;
       }
 
-
       h1 {
         margin: 0 0 10px;
         font-size: clamp(2rem, 4vw, 3.1rem);
@@ -155,7 +149,7 @@
         background: #ffffff;
         margin-bottom: 16px;
         box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.05);
-        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
       }
 
       textarea:focus {
@@ -242,6 +236,7 @@
 
       .total-score-fill {
         height: 100%;
+        width: 0%;
         border-radius: 999px;
         background: linear-gradient(90deg, #2563eb, #0ea5e9, #16a34a);
         box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
@@ -286,6 +281,7 @@
 
       .bar-fill {
         height: 100%;
+        width: 0%;
         border-radius: 999px;
         transition: width 0.75s cubic-bezier(0.22, 1, 0.36, 1);
       }
@@ -299,10 +295,6 @@
         color: #374151;
       }
 
-      .muted {
-        color: #6b7280;
-      }
-
       .empty-state {
         color: #6b7280;
         background: linear-gradient(135deg, #f9fafb, #eff6ff);
@@ -310,7 +302,6 @@
         border-radius: 18px;
         padding: 20px;
       }
-
 
       .red-flags {
         margin-bottom: 18px;
@@ -334,6 +325,16 @@
       .evidence {
         margin: 10px 0 4px;
         color: #1f2937;
+      }
+
+      .test-note {
+        margin-top: 18px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        color: #4b5563;
+        font-size: 0.92rem;
       }
 
       @keyframes revealPanel {
@@ -387,16 +388,49 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <main class="page">
+      <section class="hero">
+        <div class="hero-content">
+          <div class="eyebrow">Learning-first evaluator</div>
+          <h1>Tutor Response Judge</h1>
+          <p class="subtitle">
+            Paste a student question and a tutor response. This tool gives a quick heuristic score based on whether the response is scaffolded, concept-focused, and encourages student thinking.
+          </p>
+        </div>
+      </section>
 
-    <script type="text/babel">
-      const { useEffect, useState } = React;
+      <section class="grid">
+        <div class="card">
+          <h2>✍️ Input</h2>
 
-      // Color helper
-      const scoreColor = (n) =>
-        n === 0 ? '#dc2626' : n === 1 ? '#f59e0b' : '#16a34a';
+          <label for="question">Student question</label>
+          <textarea id="question" rows="5" placeholder="Example: What is the derivative of x^2?"></textarea>
 
-      // Rubric
+          <label for="response">Tutor response or transcript</label>
+          <textarea id="response" rows="12" placeholder="Paste the tutor response here..."></textarea>
+
+          <button id="evaluateButton" type="button">Evaluate Response</button>
+          <button id="clearButton" class="secondary" type="button">Clear</button>
+
+          <div class="test-note" id="testStatus">
+            Built-in checks run automatically in the browser console. Open DevTools to see details.
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>📊 Rubric Results</h2>
+          <div id="results">
+            <div class="empty-state">
+              Enter a student question and a tutor response, then click <strong>Evaluate Response</strong>.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      'use strict';
+
       const RUBRIC = [
         { key: 'resistsShortcutting', label: 'Resists Shortcutting' },
         { key: 'activatesThinking', label: 'Activates Thinking' },
@@ -405,8 +439,12 @@
         { key: 'checksUnderstanding', label: 'Checks Understanding' },
       ];
 
-      // Convert the internal 1-5 heuristic to a simpler 0-2 score.
-      // 0 = weak support, 1 = partial support, 2 = strong support.
+      function scoreColor(n) {
+        if (n === 0) return '#dc2626';
+        if (n === 1) return '#f59e0b';
+        return '#16a34a';
+      }
+
       function clampFive(n) {
         return Math.max(1, Math.min(5, n));
       }
@@ -418,21 +456,26 @@
         return 2;
       }
 
-      // Improved heuristic judge
+      function countMatches(patterns, text) {
+        return patterns.filter((pattern) => pattern.test(text)).length;
+      }
+
+      function wordCount(text) {
+        return (text.match(/[A-Za-z0-9_]+/g) || []).length;
+      }
+
       function analyzeTranscript(text, question) {
         const cleanText = (text || '').trim();
         const lower = cleanText.toLowerCase();
-
         const words = cleanText.match(/[A-Za-z0-9_]+/g) || [];
-        const wordCount = words.length;
+        const totalWordCount = words.length;
         const firstChunk = lower.slice(0, 180);
         const firstTutorChunk = firstChunk.startsWith('tutor:') ? firstChunk.slice(6).trim() : firstChunk;
         const sentences = cleanText
           .split(/[.!?]+/)
-          .map((s) => s.trim())
+          .map((sentence) => sentence.trim())
           .filter(Boolean);
-
-        const questionMarks = [...cleanText].filter((ch) => ch === '?').length;
+        const questionMarks = (cleanText.match(/\?/g) || []).length;
 
         const meaningfulQuestionPatterns = [
           /what do you notice/i,
@@ -452,7 +495,6 @@
           /what trend/i,
           /what does the x-axis/i,
           /what does the y-axis/i,
-          /do the scenario/i,
           /what benefit/i,
           /choose/i,
           /what outdoor/i,
@@ -496,7 +538,6 @@
           /choose/i,
           /add one/i,
           /shape/i,
-          /scaffold/i,
           /main idea/i,
           /concrete example/i,
           /final insight/i,
@@ -641,21 +682,22 @@
           /3x.?2.*cos/i,
         ];
 
-        const meaningfulQuestions = meaningfulQuestionPatterns.filter((p) => p.test(cleanText)).length;
-        const scaffoldingMoves = scaffoldPatterns.filter((p) => p.test(cleanText)).length;
-        const conceptMoves = conceptPatterns.filter((p) => p.test(cleanText)).length;
-        const understandingChecks = understandingCheckPatterns.filter((p) => p.test(cleanText)).length;
-        const deepUnderstandingChecks = deepUnderstandingCheckPatterns.filter((p) => p.test(cleanText)).length;
+        const weakExplanationMarkers = /because|\bso\b|therefore|absorbs|pollutant|power rule|chain rule|bring the|subtract|multiply by|paragraph|relax|exercise|health|screens|near-linear|relationship|cumulative|policy|axis|axes/i;
 
-        const transcriptLines = cleanText.split('
-').map((line) => line.trim()).filter(Boolean);
+        const meaningfulQuestions = countMatches(meaningfulQuestionPatterns, cleanText);
+        const scaffoldingMoves = countMatches(scaffoldPatterns, cleanText);
+        const conceptMoves = countMatches(conceptPatterns, cleanText);
+        const understandingChecks = countMatches(understandingCheckPatterns, cleanText);
+        const deepUnderstandingChecks = countMatches(deepUnderstandingCheckPatterns, cleanText);
+
+        const transcriptLines = cleanText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
         const studentLines = transcriptLines.filter((line) => line.toLowerCase().startsWith('student:'));
         const tutorLines = transcriptLines.filter((line) => line.toLowerCase().startsWith('tutor:'));
         const studentResponseWordCounts = studentLines.map((line) => {
           const responseOnly = line.slice(line.indexOf(':') + 1).trim();
-          const responseWords = responseOnly.match(/[A-Za-z0-9_]+/g) || [];
-          return responseWords.length;
+          return wordCount(responseOnly);
         });
+
         const totalStudentWords = studentResponseWordCounts.reduce((sum, count) => sum + count, 0);
         const averageStudentWords = studentResponseWordCounts.length > 0
           ? totalStudentWords / studentResponseWordCounts.length
@@ -664,7 +706,7 @@
         const hasDialogue = studentLines.length >= 2 && tutorLines.length >= 2;
         const hasEngagedDialogue = hasDialogue && (averageStudentWords >= 4 || substantialStudentResponses >= 2);
         const hasMinimalStudentDialogue = hasDialogue && totalStudentWords > 0 && averageStudentWords < 3;
-        const asksForProductiveResponse = productionPromptPatterns.some((p) => p.test(cleanText));
+        const asksForProductiveResponse = productionPromptPatterns.some((pattern) => pattern.test(cleanText));
         const hasExcellentEngagement =
           hasDialogue &&
           substantialStudentResponses >= 2 &&
@@ -673,20 +715,18 @@
           (deepUnderstandingChecks >= 1 || asksForProductiveResponse || meaningfulQuestions >= 3);
         const hasNoStudentReplies = studentLines.length === 0;
 
-        const givesAnswerEarly = directAnswerPatterns.some((p) => p.test(firstChunk) || p.test(firstTutorChunk));
-        const givesFinalAnswerAnywhere = directAnswerPatterns.some((p) => p.test(cleanText));
-        const weakExplanationMarkers = /because|so|therefore|absorbs|pollutant|power rule|chain rule|bring the|subtract|multiply by|paragraph|relax|exercise|health|screens|near-linear|relationship|cumulative|policy|axis|axes/i;
+        const givesAnswerEarly = directAnswerPatterns.some((pattern) => pattern.test(firstChunk) || pattern.test(firstTutorChunk));
+        const givesFinalAnswerAnywhere = directAnswerPatterns.some((pattern) => pattern.test(cleanText));
         const weakDirectExplanation =
           givesAnswerEarly &&
           sentences.length >= 2 &&
-          (wordCount >= 24 || weakExplanationMarkers.test(cleanText)) &&
+          (totalWordCount >= 24 || weakExplanationMarkers.test(cleanText)) &&
           (conceptMoves >= 1 || scaffoldingMoves >= 1);
         const softEarlyGuidance = givesAnswerEarly && !givesFinalAnswerAnywhere && meaningfulQuestions >= 1 && scaffoldingMoves >= 2;
 
-        const asksButNoSubstance = questionMarks >= 3 && wordCount < 25;
-        const tooShort = wordCount < 18;
+        const asksButNoSubstance = questionMarks >= 3 && totalWordCount < 25;
+        const tooShort = totalWordCount < 18;
         const hasMultiStep = sentences.length >= 3 || scaffoldingMoves >= 2;
-
 
         let resistsShortcutting = 3;
         if (givesAnswerEarly && !softEarlyGuidance) resistsShortcutting = 1;
@@ -728,16 +768,12 @@
           checksUnderstanding = Math.min(checksUnderstanding, 3);
         }
 
-        // If the response starts by giving the answer, it should not score highly
-        // for learning support just because it contains concept vocabulary.
         if (givesAnswerEarly && !softEarlyGuidance && !weakDirectExplanation) {
           activatesThinking = Math.min(activatesThinking, 2);
           scaffolds = Math.min(scaffolds, 2);
           surfacesConcepts = Math.min(surfacesConcepts, 3);
           checksUnderstanding = Math.min(checksUnderstanding, 2);
         } else if (givesAnswerEarly && weakDirectExplanation && !softEarlyGuidance) {
-          // Weak direct answers still give away the answer, but receive limited credit
-          // if they include some explanation, concept language, or procedure.
           activatesThinking = Math.min(activatesThinking, 2);
           scaffolds = Math.max(Math.min(scaffolds, 3), 3);
           surfacesConcepts = Math.max(Math.min(surfacesConcepts, 4), 3);
@@ -747,19 +783,14 @@
           checksUnderstanding = Math.min(checksUnderstanding, 3);
         }
 
-        // Calibration cap: a polished explanation without student replies should not
-        // score as highly as an interactive transcript, unless it clearly asks the
-        // learner to produce an answer, sentence, explanation, or summary.
         if (hasNoStudentReplies) {
           let totalScore = resistsShortcutting + activatesThinking + scaffolds + surfacesConcepts + checksUnderstanding;
           const reductionOrder = ['checksUnderstanding', 'activatesThinking', 'scaffolds', 'surfacesConcepts'];
 
           while (totalScore > 20) {
             let changed = false;
-
             for (const category of reductionOrder) {
               if (totalScore <= 20) break;
-
               if (category === 'checksUnderstanding' && checksUnderstanding > 1) {
                 checksUnderstanding -= 1;
                 totalScore -= 1;
@@ -778,7 +809,6 @@
                 changed = true;
               }
             }
-
             if (!changed) break;
           }
         }
@@ -789,10 +819,8 @@
 
           while (totalScore > 23) {
             let changed = false;
-
             for (const category of reductionOrder) {
               if (totalScore <= 23) break;
-
               if (category === 'checksUnderstanding' && checksUnderstanding > 1) {
                 checksUnderstanding -= 1;
                 totalScore -= 1;
@@ -811,7 +839,6 @@
                 changed = true;
               }
             }
-
             if (!changed) break;
           }
         }
@@ -832,26 +859,22 @@
           resistsShortcutting: givesAnswerEarly
             ? 'A direct-answer phrase appears near the beginning.'
             : 'The response does not appear to lead immediately with the final answer.',
-          activatesThinking:
-            hasDialogue
-              ? `${meaningfulQuestions} thinking prompt(s) detected; student responses average ${averageStudentWords.toFixed(1)} word(s).`
-              : meaningfulQuestions > 0
-                ? `${meaningfulQuestions} meaningful thinking prompt(s) detected.`
-                : `${questionMarks} question mark(s) detected, but few strong thinking prompts.`,
-          scaffolds:
-            scaffoldingMoves > 0
-              ? `${scaffoldingMoves} scaffolding cue(s) detected.`
-              : 'Few explicit scaffolding cues detected.',
-          surfacesConcepts:
-            conceptMoves > 0
-              ? `${conceptMoves} concept cue(s) detected.`
-              : 'Few conceptual explanation cues detected.',
-          checksUnderstanding:
-            hasEngagedDialogue
-              ? `Student responses suggest engagement: ${totalStudentWords} total student word(s) across ${studentLines.length} response(s).`
-              : understandingChecks > 0
-                ? `${understandingChecks} understanding-check cue(s) detected.`
-                : 'No strong understanding-check cue detected.',
+          activatesThinking: hasDialogue
+            ? `${meaningfulQuestions} thinking prompt(s) detected; student responses average ${averageStudentWords.toFixed(1)} word(s).`
+            : meaningfulQuestions > 0
+              ? `${meaningfulQuestions} meaningful thinking prompt(s) detected.`
+              : `${questionMarks} question mark(s) detected, but few strong thinking prompts.`,
+          scaffolds: scaffoldingMoves > 0
+            ? `${scaffoldingMoves} scaffolding cue(s) detected.`
+            : 'Few explicit scaffolding cues detected.',
+          surfacesConcepts: conceptMoves > 0
+            ? `${conceptMoves} concept cue(s) detected.`
+            : 'Few conceptual explanation cues detected.',
+          checksUnderstanding: hasEngagedDialogue
+            ? `Student responses suggest engagement: ${totalStudentWords} total student word(s) across ${studentLines.length} response(s).`
+            : understandingChecks > 0
+              ? `${understandingChecks} understanding-check cue(s) detected.`
+              : 'No strong understanding-check cue detected.',
         };
 
         return {
@@ -890,229 +913,156 @@
             activatesThinking: 'Use prompts like “What do you notice?”, “Which rule applies?”, or “Where would you start?”',
             scaffolds: 'Break the help into a sequence such as first, next, then, and now you try.',
             surfacesConcepts: 'Name the core idea and explain why it applies in this problem.',
-            checksUnderstanding: 'End by asking the student to explain the idea in their own words, then look for a substantive student response.'
+            checksUnderstanding: 'End by asking the student to explain the idea in their own words, then look for a substantive student response.',
           },
         };
       }
 
-      // Score bar UI
-      function ScoreBar({ score }) {
-        const [width, setWidth] = useState(0);
-
-        useEffect(() => {
-          setWidth(0);
-          const timer = setTimeout(() => {
-            setWidth((score / 2) * 100);
-          }, 120);
-
-          return () => clearTimeout(timer);
-        }, [score]);
-
-        return (
-          <div className="bar-track">
-            <div
-              className="bar-fill"
-              style={{
-                width: `${width}%`,
-                background: scoreColor(score),
-              }}
-            />
-          </div>
-        );
-      }
-
-      function AnimatedScoreNumber({ value, revealKey }) {
-        const [displayValue, setDisplayValue] = useState(0);
-
-        useEffect(() => {
-          let start = null;
-          let animationFrame = null;
-          const duration = 650;
-          const target = Number(value);
-
-          function animate(timestamp) {
-            if (!start) start = timestamp;
-            const progress = Math.min((timestamp - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setDisplayValue(target * eased);
-
-            if (progress < 1) {
-              animationFrame = requestAnimationFrame(animate);
-            }
-          }
-
-          setDisplayValue(0);
-          animationFrame = requestAnimationFrame(animate);
-
-          return () => cancelAnimationFrame(animationFrame);
-        }, [value, revealKey]);
-
-        return <div className="score-number">{displayValue.toFixed(0)}</div>;
-      }
-
-      function TotalScoreBar({ value, max = 10, revealKey }) {
-        const [width, setWidth] = useState(0);
-
-        useEffect(() => {
-          setWidth(0);
-          const timer = setTimeout(() => {
-            setWidth((value / max) * 100);
-          }, 180);
-
-          return () => clearTimeout(timer);
-        }, [value, max, revealKey]);
-
-        return (
-          <div className="total-score-track" aria-label={`Total score ${value} out of ${max}`}>
-            <div
-              className="total-score-fill"
-              style={{ width: `${width}%` }}
-            />
-          </div>
-        );
-      }
-
-      function ResultsPanel({ result, revealKey }) {
-        if (!result) {
-          return (
-            <div className="empty-state">
-              Enter a student question and a tutor response, then click <strong>Evaluate Response</strong>.
-            </div>
-          );
-        }
-
+      function renderResults(result, revealKey) {
+        const results = document.getElementById('results');
         const total = RUBRIC.reduce((sum, item) => sum + result.scores[item.key], 0);
 
-        return (
-          <>
-            <div className="score-summary">
-              <AnimatedScoreNumber value={total} revealKey={revealKey} />
-              <div className="score-summary-text">
-                <div className="score-label">total score out of 10</div>
-                <TotalScoreBar value={total} max={10} revealKey={revealKey} />
+        const redFlagsHtml = result.redFlags.length > 0
+          ? `<div class="red-flags"><h3>Red flags</h3><ul>${result.redFlags.map((flag) => `<li>${escapeHtml(flag)}</li>`).join('')}</ul></div>`
+          : '';
+
+        const rubricHtml = RUBRIC.map((item, index) => {
+          const score = result.scores[item.key];
+          return `
+            <div class="rubric-item" style="animation-delay: ${0.18 + index * 0.09}s">
+              <div class="rubric-header">
+                <span>${escapeHtml(item.label)}</span>
+                <span class="score-pill" style="background: ${scoreColor(score)}">${score}/2</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" data-width="${(score / 2) * 100}" style="background: ${scoreColor(score)}"></div>
+              </div>
+              <p class="evidence"><strong>Evidence:</strong> ${escapeHtml(result.evidence[item.key])}</p>
+              <p class="reasoning"><strong>Reasoning:</strong> ${escapeHtml(result.reasoning[item.key])}</p>
+              <p class="suggestion"><strong>Suggestion:</strong> ${escapeHtml(result.suggestions[item.key])}</p>
+            </div>
+          `;
+        }).join('');
+
+        results.innerHTML = `
+          <div class="score-summary" data-reveal-key="${revealKey}">
+            <div class="score-number" id="scoreNumber">0</div>
+            <div class="score-summary-text">
+              <div class="score-label">total score out of 10</div>
+              <div class="total-score-track" aria-label="Total score ${total} out of 10">
+                <div class="total-score-fill" id="totalScoreFill"></div>
               </div>
             </div>
+          </div>
+          ${redFlagsHtml}
+          ${rubricHtml}
+        `;
 
-            {result.redFlags && result.redFlags.length > 0 && (
-              <div className="red-flags">
-                <h3>Red flags</h3>
-                <ul>
-                  {result.redFlags.map((flag, index) => (
-                    <li key={index}>{flag}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {RUBRIC.map((item, index) => {
-              const score = result.scores[item.key];
-
-              return (
-                <div
-                  className="rubric-item"
-                  key={item.key}
-                  style={{ animationDelay: `${0.18 + index * 0.09}s` }}
-                >
-                  <div className="rubric-header">
-                    <span>{item.label}</span>
-                    <span
-                      className="score-pill"
-                      style={{ background: scoreColor(score) }}
-                    >
-                      {score}/2
-                    </span>
-                  </div>
-
-                  <ScoreBar score={score} />
-
-                  {result.evidence && (
-                    <p className="evidence">
-                      <strong>Evidence:</strong> {result.evidence[item.key]}
-                    </p>
-                  )}
-
-                  <p className="reasoning">
-                    <strong>Reasoning:</strong> {result.reasoning[item.key]}
-                  </p>
-
-                  <p className="suggestion">
-                    <strong>Suggestion:</strong> {result.suggestions[item.key]}
-                  </p>
-                </div>
-              );
-            })}
-          </>
-        );
+        animateScoreNumber(total);
+        window.requestAnimationFrame(() => {
+          document.getElementById('totalScoreFill').style.width = `${(total / 10) * 100}%`;
+          document.querySelectorAll('.bar-fill').forEach((bar) => {
+            bar.style.width = `${bar.dataset.width}%`;
+          });
+        });
       }
 
-      // Main App
-      function App() {
-        const [question, setQuestion] = useState('');
-        const [response, setResponse] = useState('');
-        const [result, setResult] = useState(null);
-        const [revealKey, setRevealKey] = useState(0);
+      function animateScoreNumber(target) {
+        const element = document.getElementById('scoreNumber');
+        let start = null;
+        const duration = 650;
 
-        const judge = () => {
-          setResult(analyzeTranscript(response, question));
-          setRevealKey((current) => current + 1);
-        };
+        function animate(timestamp) {
+          if (!start) start = timestamp;
+          const progress = Math.min((timestamp - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          element.textContent = String(Math.round(target * eased));
+          if (progress < 1) window.requestAnimationFrame(animate);
+        }
 
-        const clearAll = () => {
-          setQuestion('');
-          setResponse('');
-          setResult(null);
-          setRevealKey(0);
-        };
-
-        return (
-          <main className="page">
-            <section className="hero">
-              <div className="hero-content">
-                <div className="eyebrow">Learning-first evaluator</div>
-                <h1>Tutor Response Judge</h1>
-                <p className="subtitle">
-                  Paste a student question and a tutor response. This tool gives a quick heuristic score based on whether the response is scaffolded, concept-focused, and encourages student thinking.
-                </p>
-              </div>
-            </section>
-
-            <section className="grid">
-              <div className="card">
-                <h2>✍️ Input</h2>
-
-                <label htmlFor="question">Student question</label>
-                <textarea
-                  id="question"
-                  rows="5"
-                  placeholder="Example: What is the derivative of x^2?"
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                />
-
-                <label htmlFor="response">Tutor response or transcript</label>
-                <textarea
-                  id="response"
-                  rows="12"
-                  placeholder="Paste the tutor response here..."
-                  value={response}
-                  onChange={(e) => setResponse(e.target.value)}
-                />
-
-                <button onClick={judge}>Evaluate Response</button>
-                <button className="secondary" onClick={clearAll}>Clear</button>
-              </div>
-
-              <div className="card">
-                <h2>📊 Rubric Results</h2>
-                <ResultsPanel result={result} revealKey={revealKey} />
-              </div>
-            </section>
-          </main>
-        );
+        window.requestAnimationFrame(animate);
       }
 
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(<App />);
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function evaluateResponse() {
+        const question = document.getElementById('question').value;
+        const response = document.getElementById('response').value;
+        const result = analyzeTranscript(response, question);
+        window.__revealKey = (window.__revealKey || 0) + 1;
+        renderResults(result, window.__revealKey);
+      }
+
+      function clearAll() {
+        document.getElementById('question').value = '';
+        document.getElementById('response').value = '';
+        document.getElementById('results').innerHTML = '<div class="empty-state">Enter a student question and a tutor response, then click <strong>Evaluate Response</strong>.</div>';
+      }
+
+      function totalScore(result) {
+        return RUBRIC.reduce((sum, item) => sum + result.scores[item.key], 0);
+      }
+
+      function runSelfTests() {
+        const tests = [
+          {
+            name: 'Poor direct derivative answer stays low',
+            question: 'What is the derivative of 5x^3?',
+            transcript: 'Tutor: The derivative is 15x^2.',
+            min: 0,
+            max: 1,
+          },
+          {
+            name: 'Weak direct explanation gets limited credit',
+            question: 'What is the derivative of 5x^3?',
+            transcript: 'Tutor: Use the power rule. Bring the 3 down, multiply by 5, and subtract 1 from the exponent. The answer is 15x^2.',
+            min: 2,
+            max: 3,
+          },
+          {
+            name: 'Excellent dialogue scores high',
+            question: 'What is the derivative of sin(x^3)?',
+            transcript: 'Tutor: Before calculating, what do you notice about sin(x^3)?\nStudent: It is not just sin(x). The inside is x^3, so it is a composition.\nTutor: Exactly. Which rule applies to a composition, and why?\nStudent: The chain rule applies because I need the derivative of the outside and the inside.\nTutor: Great. What is the outside derivative evaluated at the inside?\nStudent: cos(x^3).\nTutor: And what is the derivative of the inside function x^3?\nStudent: 3x^2.\nTutor: Put those pieces together. What answer do you get, and can you explain why that extra factor appears?',
+            min: 9,
+            max: 10,
+          },
+          {
+            name: 'No student reply is capped below excellent',
+            question: 'Please help me analyze Figure SPM.10.',
+            transcript: 'Tutor: Start by identifying the axes. The x-axis shows cumulative CO2 emissions, and the y-axis shows global surface temperature increase. The visual pattern is near-linear, so the main message is that additional CO2 emissions add additional warming. What trend do you notice?',
+            min: 5,
+            max: 7,
+          },
+        ];
+
+        const results = tests.map((test) => {
+          const result = analyzeTranscript(test.transcript, test.question);
+          const total = totalScore(result);
+          const passed = total >= test.min && total <= test.max;
+          return { ...test, total, passed };
+        });
+
+        console.table(results.map(({ name, total, min, max, passed }) => ({ name, total, expected: `${min}-${max}`, passed })));
+
+        const failed = results.filter((result) => !result.passed);
+        const status = document.getElementById('testStatus');
+        if (failed.length === 0) {
+          status.textContent = 'Built-in checks passed. Open DevTools to see the test table.';
+        } else {
+          status.textContent = `${failed.length} built-in check(s) need review. Open DevTools to see details.`;
+        }
+      }
+
+      document.getElementById('evaluateButton').addEventListener('click', evaluateResponse);
+      document.getElementById('clearButton').addEventListener('click', clearAll);
+      runSelfTests();
     </script>
   </body>
 </html>
