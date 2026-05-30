@@ -1,290 +1,1118 @@
-// Heuristic v3 — fix false-positive direct-answer detection and credit short-reply dialogue.
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tutor Response Judge</title>
 
-function analyzeTranscript(text, question) {
-  const lower = text.toLowerCase();
+    <!-- React and Babel loaded from CDNs so this works as a simple GitHub Page -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  let firstContentLine = lines[0] || '';
-  firstContentLine = firstContentLine.replace(/^Tutor:\s*/i, '').trim();
-  const firstLineLower = firstContentLine.toLowerCase();
+    <style>
+      * {
+        box-sizing: border-box;
+      }
 
-  const questionCount = (text.match(/\?/g) || []).length;
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(59, 130, 246, 0.22), transparent 32%),
+          radial-gradient(circle at top right, rgba(22, 163, 74, 0.16), transparent 30%),
+          linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f0fdf4 100%);
+        color: #111827;
+        line-height: 1.5;
+        min-height: 100vh;
+      }
 
-  // --- Direct answer detection (rewritten) ---
-  // Extract tutor-only text for analysis (so student answers don't trip detection)
-  const tutorLineRegex = /^Tutor:\s*(.*)$/gmi;
-  let tutorText;
-  if (/^Tutor:|^Student:/mi.test(text)) {
-    const matches = [...text.matchAll(tutorLineRegex)];
-    tutorText = matches.map(m => m[1]).join(' ');
-  } else {
-    tutorText = text;
-  }
-  const tutorLower = tutorText.toLowerCase();
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 34px 20px 60px;
+      }
 
-  // Patterns that indicate a declarative answer was given
-  const declarativeAnswerPatterns = [
-    /\bthe answer is\s+[^?]/i,
-    /\bthe derivative is\s+[^?]/i,
-    /\bso the derivative is\b/i,
-    /\bso the answer is\b/i,
-    /\bso\s+\S*\s*=\s*\S/i,                 // "so 5*3 = 15"
-    /\b=\s*\d+x\^?2/i,                       // "= 15x^2"
-    /\bis\s+\d+x\^?2(\b|\s|$|\.)/i,          // "is 15x^2"
-    /\bis\s+\d+x\^?2\s*cos/i,                // "is 3x^2 cos(...)"
-    /\b\d+x\^?2\s*cos\s*\(\s*x\^?3\s*\)/i,   // "3x^2 cos(x^3)" stated
-  ];
+      .hero {
+        position: relative;
+        overflow: hidden;
+        background:
+          linear-gradient(135deg, rgba(37, 99, 235, 0.96), rgba(14, 165, 233, 0.9)),
+          radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.45), transparent 34%);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 28px;
+        padding: 34px;
+        box-shadow: 0 22px 50px rgba(37, 99, 235, 0.22);
+        margin-bottom: 24px;
+      }
 
-  // First-line direct-answer signals (binary / writing-for-them / figure-summary)
-  const firstLineAnswerSignals = [
-    /^yes[,\.\s]/i,
-    /^no[,\.\s]/i,
-    /^here['\u2019]?s?\s+(is\s+)?(a\s+)?(paragraph|short paragraph|the paragraph|a 100)/i,
-    /^here['\u2019]?s?\s+(an?|the)\s+(answer|paragraph|reflection|summary)/i,
-    /^the figure shows\b/i,
-    /^figure\s+spm/i,
-    /^spending time outside\b/i,
-  ];
+      .hero::before,
+      .hero::after {
+        content: "";
+        position: absolute;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.16);
+      }
 
-  const firstLineAnswers = firstLineAnswerSignals.some(re => re.test(firstContentLine));
-  const declarativeAnswerInTutor = declarativeAnswerPatterns.some(re => re.test(tutorLower));
+      .hero::before {
+        width: 220px;
+        height: 220px;
+        right: -70px;
+        top: -80px;
+      }
 
-  // Production prompt cancels declarative-answer penalty for the *fair* case where
-  // tutor names the method but asks student to apply it.
-  const productionPromptPatterns = [
-    /what answer do you get/i,
-    /try (it|writing|applying)/i,
-    /now you try/i,
-    /what would you say/i,
-    /how would you summarize/i,
-    /can you (explain|summarize|describe)/i,
-    /put (those|these) pieces together/i,
-    /what trend do you notice/i,
-    /what do you want to focus on/i,
-    /what comes to mind\?/i,
-    /what is the derivative\?/i,
-  ];
-  const asksForProduction = productionPromptPatterns.some(re => re.test(text));
+      .hero::after {
+        width: 140px;
+        height: 140px;
+        right: 110px;
+        bottom: -70px;
+      }
 
-  // Final givesAnswerEarly: declarative answer was given (and not just method named with production ask)
-  const givesAnswerEarly = firstLineAnswers || declarativeAnswerInTutor;
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        max-width: 760px;
+      }
 
-  // --- Explanatory markers ---
-  const explanatoryMarkers = [
-    'because', ' so ', 'therefore', 'absorbs', 'pollutant',
-    'power rule', 'chain rule', 'bring the', 'subtract', 'multiply by',
-    'paragraph', 'near-linear', 'relationship', 'cumulative', 'policy',
-    'x-axis', 'y-axis', 'axes', 'composition', 'inside function', 'outside function'
-  ];
-  const hasExplanation = explanatoryMarkers.some(m => lower.includes(m));
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        font-size: 0.85rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
 
-  // --- Tutoring prompts ---
-  const tutoringPrompts = [
-    'what do you notice', 'which rule applies', 'try the first step',
-    'explain your reasoning', 'what would happen if', 'how do you know',
-    'what answer do you get', 'what trend do you notice', 'what property',
-    'what does the x-axis', 'what does the y-axis', 'what benefit',
-    'what outdoor', 'what is one', 'how did it', 'what would you say',
-    'what do you already know', 'now what is', 'what is the derivative',
-    'what rule comes to mind', 'what comes to mind', 'what structure do you notice',
-    'walk me through', 'describe the structure', 'how would you summarize',
-    'how would you phrase', 'where would you start', 'what do you see',
-    "what's the outside", "what's the inside",
-    "what's the x-axis", "what's the y-axis", "what's on the x-axis",
-    'describe the relationship', 'what relationship', 'in your own words',
-    'can you explain', 'can you describe', 'can you summarize',
-    'try writing', 'try applying', 'try it', 'now you try',
-    'before you', 'before drafting', 'before computing',
-    'before summarizing', 'before answering', 'how do you feel',
-    'what does that moment tell you', 'is this just', 'what rule',
-    'so which rule', 'what pattern',
-  ];
-  const tutoringPromptHits = new Set(tutoringPrompts.filter(p => lower.includes(p)));
-  const tutoringPromptCount = tutoringPromptHits.size;
 
-  // --- Scaffolding moves ---
-  const scaffoldMoves = [
-    'first,', 'first.', 'first ',
-    'next,', 'next.', 'next ',
-    'then,', 'then ',
-    'try ', 'hint',
-    "let's break this down", "let's identify", "let's reason",
-    "let's slow down", "let's read", "let's find", "let's shape",
-    "let's build", "let's start",
-    'if we think of this as', 'outside function', 'inside function',
-    'now what is', 'multiply those pieces', 'evaluated at the inside',
-    'identify the axes', 'identify the coefficient', 'identify the exponent',
-    'before we', 'before answering', 'before drafting', 'before computing',
-    'before summarizing', 'before calculating', 'before you',
-    'start by', 'think of one', 'think of a specific',
-    'step', 'walk through',
-  ];
-  const scaffoldHits = new Set(scaffoldMoves.filter(m => lower.includes(m)));
-  const scaffoldCount = scaffoldHits.size;
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(2rem, 4vw, 3.1rem);
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+      }
 
-  // --- Concept language ---
-  const conceptTerms = [
-    'because', 'means', 'power rule', 'chain rule', 'derivative',
-    'sine', 'cosine', 'sin(', 'cos(', 'integral',
-    'slope', 'rate of change',
-    'exponent', 'coefficient', 'outside function', 'inside function',
-    'nested inside', 'composition', 'derivative of the outside',
-    'derivative of the inside', 'evaluated at',
-    'greenhouse gas', 'infrared', 'longwave', 'radiation', 'atmosphere',
-    'ozone', 'stratospheric', 'tropospheric', 'ground-level', 'pollutant',
-    'cumulative co2', 'cumulative emissions', 'emissions',
-    'global surface temperature', 'warming', 'near-linear', 'net zero',
-    'scenario', 'pre-industrial', 'carbon budget',
-    'main idea', 'concrete example', 'final insight', 'revise', 'voice',
-    'reflective', 'paragraph', 'benefit', 'specific example',
-    'topic sentence', 'reflection',
-    'x-axis', 'y-axis', 'visual pattern',
-    'policy implication', 'two-sentence summary', '2-3 sentence summary',
-    'cumulative',
-  ];
-  const conceptHitSet = new Set(conceptTerms.filter(t => lower.includes(t)));
-  const conceptHits = conceptHitSet.size;
+      h2 {
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
 
-  // --- Deep understanding checks ---
-  const understandingChecks = [
-    'does that make sense', 'in your own words', 'can you explain',
-    'explain why', 'what answer do you get', 'try writing',
-    'now you try', 'what trend do you notice', 'how would you summarize',
-    'can you describe', 'can you summarize', 'point to one sentence',
-    'after your revision', 'why does', 'why is',
-  ];
-  const deepCheckHits = new Set(understandingChecks.filter(c => lower.includes(c)));
-  const deepCheckCount = deepCheckHits.size;
+      .subtitle {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 1.05rem;
+        max-width: 720px;
+      }
 
-  // --- Dialogue detection ---
-  const studentLines = text.match(/^Student:\s*.*/gmi) || [];
-  const tutorLines = text.match(/^Tutor:\s*.*/gmi) || [];
-  const studentResponses = studentLines.map(l => l.replace(/^Student:\s*/i, '').trim());
-  const totalStudentWords = studentResponses.reduce(
-    (sum, r) => sum + r.split(/\s+/).filter(w => w.length > 0).length, 0);
-  const avgStudentLength = studentResponses.length > 0
-    ? totalStudentWords / studentResponses.length : 0;
-  const substantialStudentResponses = studentResponses.filter(
-    r => r.split(/\s+/).filter(w => w.length > 0).length >= 5).length;
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
 
-  const hasDialogue = studentLines.length > 0 && tutorLines.length > 0;
-  // Minimal dialogue: tutor and student exchanged at least 2 turns each (real back-and-forth)
-  const hasRealDialogue = hasDialogue && studentLines.length >= 2 && tutorLines.length >= 2;
-  const hasSubstantialEngagement =
-    substantialStudentResponses >= 2 &&
-    totalStudentWords >= 24 &&
-    avgStudentLength >= 7 &&
-    (deepCheckCount > 0 || tutoringPromptCount >= 2);
+      @media (min-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
 
-  // --- Scoring (each 0-2) ---
+      .card {
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.09);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
 
-  // resistsShortcutting
-  let resists;
-  if (givesAnswerEarly && !asksForProduction) {
-    resists = hasExplanation ? 1 : 0;
-  } else if (givesAnswerEarly && asksForProduction) {
-    // The answer was given but the tutor still asks for production — rare ambiguous case
-    resists = 1;
-  } else if (tutoringPromptCount >= 2 || scaffoldCount >= 3 || hasRealDialogue) {
-    resists = 2;
-  } else if (tutoringPromptCount >= 1 || scaffoldCount >= 1) {
-    resists = 1;
-  } else {
-    resists = 0;
-  }
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 24px 50px rgba(15, 23, 42, 0.12);
+      }
 
-  // activatesThinking
-  let thinking;
-  if (tutoringPromptCount >= 3 || (hasDialogue && substantialStudentResponses >= 2)
-      || (hasRealDialogue && tutorLines.length >= 3)) {
-    thinking = 2;
-  } else if (tutoringPromptCount >= 1 || hasRealDialogue || questionCount >= 2) {
-    thinking = 1;
-  } else {
-    thinking = 0;
-  }
-  if (givesAnswerEarly && !hasSubstantialEngagement && !hasRealDialogue) {
-    thinking = Math.min(thinking, 1);
-  }
+      label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
 
-  // scaffolds — question-driven dialogue counts as scaffolding
-  let scaffolds;
-  if (scaffoldCount >= 2 || (hasRealDialogue && tutorLines.length >= 3 && tutoringPromptCount >= 2)) {
-    scaffolds = 2;
-  } else if (scaffoldCount >= 1 || hasRealDialogue) {
-    scaffolds = 1;
-  } else {
-    scaffolds = 0;
-  }
-  if (givesAnswerEarly && !hasSubstantialEngagement && !hasRealDialogue) {
-    scaffolds = Math.min(scaffolds, hasExplanation ? 1 : 0);
-  }
+      textarea {
+        width: 100%;
+        resize: vertical;
+        border: 1px solid #d1d5db;
+        border-radius: 16px;
+        padding: 14px;
+        font: inherit;
+        background: #ffffff;
+        margin-bottom: 16px;
+        box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.05);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+      }
 
-  // surfacesConcepts
-  let concepts;
-  if (conceptHits >= 3) concepts = 2;
-  else if (conceptHits >= 1) concepts = 1;
-  else concepts = 0;
-  if (givesAnswerEarly && !hasSubstantialEngagement && !hasRealDialogue && conceptHits < 3) {
-    concepts = Math.min(concepts, 1);
-  }
+      textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16), inset 0 1px 3px rgba(15, 23, 42, 0.05);
+      }
 
-  // checksUnderstanding
-  let checks;
-  if (deepCheckCount >= 2 ||
-      (hasDialogue && deepCheckCount >= 1 && substantialStudentResponses >= 1)) {
-    checks = 2;
-  } else if (deepCheckCount >= 1 || (questionCount >= 2 && hasDialogue)) {
-    checks = 1;
-  } else {
-    checks = 0;
-  }
-  if (givesAnswerEarly && !hasSubstantialEngagement && !hasRealDialogue) {
-    checks = Math.min(checks, hasExplanation ? 1 : 0);
-  }
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font-weight: 800;
+        cursor: pointer;
+        background: linear-gradient(135deg, #2563eb, #0ea5e9);
+        color: white;
+        font-size: 1rem;
+        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.26);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+      }
 
-  let total = resists + thinking + scaffolds + concepts + checks;
+      button:hover {
+        transform: translateY(-1px);
+        filter: brightness(0.98);
+        box-shadow: 0 14px 28px rgba(37, 99, 235, 0.32);
+      }
 
-  // --- Caps ---
-  let cap = 10;
-  let capReason = null;
+      button.secondary {
+        background: #eef2ff;
+        color: #1e3a8a;
+        margin-left: 8px;
+        box-shadow: none;
+      }
 
-  if (!hasDialogue) {
-    if (givesAnswerEarly && !hasExplanation) {
-      cap = 2;
-      capReason = 'Direct answer dump with no explanation. Cap 2.';
-    } else if (givesAnswerEarly && !asksForProduction) {
-      cap = 4;
-      capReason = 'Direct answer with explanation but no production ask. Cap 4.';
-    } else if (asksForProduction) {
-      cap = 7;
-      capReason = 'Monologue with production prompt. Cap 7.';
-    } else if (scaffoldCount >= 1 || tutoringPromptCount >= 1) {
-      cap = 6;
-      capReason = 'Monologue with scaffolding but no production ask. Cap 6.';
-    } else {
-      cap = 4;
-      capReason = 'Monologue with no scaffolding or production. Cap 4.';
-    }
-  } else if (!hasSubstantialEngagement) {
-    cap = 8;
-    capReason = 'Dialogue with limited engagement. Cap 8.';
-  }
+      button.secondary:hover {
+        background: #dbeafe;
+      }
 
-  if (total > cap) total = cap;
+      .score-summary {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+        padding: 18px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #eff6ff, #ecfdf5);
+        border: 1px solid rgba(37, 99, 235, 0.18);
+        animation: revealPanel 0.55s ease both;
+      }
 
-  return {
-    scores: { resists, thinking, scaffolds, concepts, checks },
-    total, cap, capReason,
-    diagnostics: {
-      givesAnswerEarly, hasExplanation, declarativeAnswerInTutor, firstLineAnswers,
-      questionCount, tutoringPromptCount, scaffoldCount, conceptHits, deepCheckCount,
-      studentLineCount: studentLines.length, tutorLineCount: tutorLines.length,
-      totalStudentWords, avgStudentLength: Number(avgStudentLength.toFixed(1)),
-      substantialStudentResponses, hasDialogue, hasRealDialogue,
-      hasSubstantialEngagement, asksForProduction,
-    }
-  };
-}
+      .score-number {
+        display: grid;
+        place-items: center;
+        width: 78px;
+        height: 78px;
+        border-radius: 24px;
+        background: white;
+        color: #2563eb;
+        font-size: 2.25rem;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.16);
+        animation: scorePop 0.6s ease both;
+      }
 
-module.exports = { analyzeTranscript };
+      .score-label {
+        color: #374151;
+        font-weight: 700;
+      }
+
+      .score-summary-text {
+        flex: 1;
+      }
+
+      .total-score-track {
+        width: 100%;
+        height: 16px;
+        margin-top: 12px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(37, 99, 235, 0.14);
+        border-radius: 999px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.08);
+      }
+
+      .total-score-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #2563eb, #0ea5e9, #16a34a);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+        transition: width 3.2s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .rubric-item {
+        border-top: 1px solid #e5e7eb;
+        padding: 18px 0;
+        opacity: 0;
+        animation: rubricReveal 0.5s ease both;
+      }
+
+      .rubric-item:first-of-type {
+        border-top: none;
+      }
+
+      .rubric-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        font-weight: 800;
+      }
+
+      .score-pill {
+        min-width: 54px;
+        text-align: center;
+        color: white;
+        border-radius: 999px;
+        padding: 4px 11px;
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14);
+      }
+
+      .bar-track {
+        width: 100%;
+        background: #e5e7eb;
+        height: 11px;
+        border-radius: 999px;
+        margin-top: 10px;
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .reasoning {
+        margin: 10px 0 4px;
+      }
+
+      .suggestion {
+        margin: 0;
+        color: #374151;
+      }
+
+      .muted {
+        color: #6b7280;
+      }
+
+      .empty-state {
+        color: #6b7280;
+        background: linear-gradient(135deg, #f9fafb, #eff6ff);
+        border: 1px dashed #93c5fd;
+        border-radius: 18px;
+        padding: 20px;
+      }
+
+
+      .red-flags {
+        margin-bottom: 18px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #fff7ed, #fffbeb);
+        border: 1px solid #fed7aa;
+        box-shadow: 0 10px 22px rgba(249, 115, 22, 0.08);
+        animation: revealPanel 0.55s ease 0.12s both;
+      }
+
+      .red-flags h3 {
+        margin: 0 0 8px;
+      }
+
+      .red-flags ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .evidence {
+        margin: 10px 0 4px;
+        color: #1f2937;
+      }
+
+      @keyframes revealPanel {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes scorePop {
+        0% {
+          opacity: 0;
+          transform: scale(0.65) rotate(-3deg);
+        }
+        65% {
+          opacity: 1;
+          transform: scale(1.08) rotate(1deg);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) rotate(0deg);
+        }
+      }
+
+      @keyframes rubricReveal {
+        from {
+          opacity: 0;
+          transform: translateX(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useEffect, useState } = React;
+
+      // Color helper
+      const scoreColor = (n) =>
+        n === 0 ? '#dc2626' : n === 1 ? '#f59e0b' : '#16a34a';
+
+      // Rubric
+      const RUBRIC = [
+        { key: 'resistsShortcutting', label: 'Resists Shortcutting' },
+        { key: 'activatesThinking', label: 'Activates Thinking' },
+        { key: 'scaffolds', label: 'Scaffolds Appropriately' },
+        { key: 'surfacesConcepts', label: 'Surfaces Concepts' },
+        { key: 'checksUnderstanding', label: 'Checks Understanding' },
+      ];
+
+      // Convert the internal 1-5 heuristic to a simpler 0-2 score.
+      // 0 = weak support, 1 = partial support, 2 = strong support.
+      function clampFive(n) {
+        return Math.max(1, Math.min(5, n));
+      }
+
+      function toTwoPointScore(n) {
+        const clamped = clampFive(n);
+        if (clamped <= 2) return 0;
+        if (clamped <= 4) return 1;
+        return 2;
+      }
+
+      // Improved heuristic judge
+      function analyzeTranscript(text, question) {
+        const cleanText = (text || '').trim();
+        const lower = cleanText.toLowerCase();
+
+        const words = cleanText.match(/[A-Za-z0-9_]+/g) || [];
+        const wordCount = words.length;
+        const firstChunk = lower.slice(0, 180);
+        const firstTutorChunk = firstChunk.startsWith('tutor:') ? firstChunk.slice(6).trim() : firstChunk;
+        const sentences = cleanText
+          .split(/[.!?]+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        const questionMarks = [...cleanText].filter((ch) => ch === '?').length;
+
+        const meaningfulQuestionPatterns = [
+          /what do you notice/i,
+          /what rule/i,
+          /which rule/i,
+          /what would/i,
+          /what happens/i,
+          /how do you know/i,
+          /why/i,
+          /can you/i,
+          /try/i,
+          /your reasoning/i,
+          /in your own words/i,
+          /before we/i,
+          /where would you start/i,
+          /what property/i,
+          /what trend/i,
+          /what does the x-axis/i,
+          /what does the y-axis/i,
+          /do the scenario/i,
+          /what benefit/i,
+          /choose/i,
+          /what outdoor/i,
+          /what is one/i,
+          /how did it/i,
+          /what would you say/i,
+          /what do you already know/i,
+          /does ozone/i,
+          /is it/i,
+          /or is/i,
+          /how would you summarize/i,
+          /now what is/i,
+          /what is the derivative/i,
+        ];
+
+        const scaffoldPatterns = [
+          /first/i,
+          /next/i,
+          /then/i,
+          /start by/i,
+          /let's break/i,
+          /one step/i,
+          /step/i,
+          /hint/i,
+          /try/i,
+          /look at/i,
+          /compare/i,
+          /instead of/i,
+          /let's identify/i,
+          /identify the/i,
+          /if we think of this as/i,
+          /outside function/i,
+          /inside function/i,
+          /what would u be/i,
+          /what would .* be/i,
+          /now what is/i,
+          /multiply those pieces/i,
+          /evaluated at the inside/i,
+          /build it/i,
+          /build/i,
+          /choose/i,
+          /add one/i,
+          /shape/i,
+          /scaffold/i,
+          /main idea/i,
+          /concrete example/i,
+          /final insight/i,
+          /revise/i,
+          /identify the axes/i,
+          /x-axis/i,
+          /y-axis/i,
+          /visual pattern/i,
+          /policy implication/i,
+          /two-sentence/i,
+          /2-3 sentence/i,
+          /summary should/i,
+          /before answering/i,
+          /reason it out/i,
+          /location matters/i,
+          /summarize the answer/i,
+          /one or two sentences/i,
+        ];
+
+        const conceptPatterns = [
+          /because/i,
+          /means/i,
+          /represents/i,
+          /concept/i,
+          /rule/i,
+          /power rule/i,
+          /slope/i,
+          /rate of change/i,
+          /derivative/i,
+          /exponent/i,
+          /coefficient/i,
+          /constant/i,
+          /chain rule/i,
+          /product rule/i,
+          /quotient rule/i,
+          /outside function/i,
+          /inside function/i,
+          /nested inside/i,
+          /greenhouse gas/i,
+          /infrared/i,
+          /longwave/i,
+          /radiation/i,
+          /atmosphere/i,
+          /ozone/i,
+          /stratospheric/i,
+          /tropospheric/i,
+          /ground-level/i,
+          /pollutant/i,
+          /uv/i,
+          /reflective/i,
+          /paragraph/i,
+          /main idea/i,
+          /benefit/i,
+          /specific/i,
+          /example/i,
+          /voice/i,
+          /revise/i,
+          /figure/i,
+          /axis/i,
+          /axes/i,
+          /cumulative/i,
+          /co2/i,
+          /emissions/i,
+          /global surface temperature/i,
+          /warming/i,
+          /near-linear/i,
+          /net zero/i,
+          /scenario/i,
+          /policy implication/i,
+        ];
+
+        const understandingCheckPatterns = [
+          /does that make sense/i,
+          /can you explain/i,
+          /can you tell me/i,
+          /what would you do next/i,
+          /in your own words/i,
+          /try one/i,
+          /now you try/i,
+          /what do you think/i,
+          /why do you think/i,
+          /what answer do you get/i,
+          /try writing/i,
+          /try a/i,
+          /what would you say/i,
+          /what trend do you notice/i,
+          /can you explain the difference/i,
+          /explain why/i,
+          /what is one outdoor/i,
+        ];
+
+        const deepUnderstandingCheckPatterns = [
+          /in your own words/i,
+          /can you explain/i,
+          /explain why/i,
+          /what answer do you get/i,
+          /try writing/i,
+          /now you try/i,
+          /what would you say/i,
+          /what trend do you notice/i,
+          /can you explain the difference/i,
+          /how would you summarize/i,
+        ];
+
+        const productionPromptPatterns = [
+          /what answer do you get/i,
+          /try writing/i,
+          /now you try/i,
+          /what would you say/i,
+          /how would you summarize/i,
+          /write a/i,
+          /draft/i,
+          /summarize/i,
+          /explain in your own words/i,
+          /can you explain/i,
+          /put those pieces together/i,
+          /what benefit do you want to focus on/i,
+          /what trend do you notice/i,
+          /what is your first sentence/i,
+        ];
+
+        const directAnswerPatterns = [
+          /the answer is/i,
+          /the derivative is/i,
+          /the correct answer is/i,
+          /final answer/i,
+          /so the answer/i,
+          /^yes($|[^a-z0-9])/i,
+          /^no($|[^a-z0-9])/i,
+          /^here is/i,
+          /^here's/i,
+          /^figure .* shows/i,
+          /^the figure shows/i,
+          /^spending time outside/i,
+          /^use the power rule/i,
+          /^this is the power rule/i,
+          /^this is chain rule/i,
+          /^this is a chain rule/i,
+          /^the chain rule gives/i,
+          /^2x([^a-z0-9]|$)/i,
+          /15x.?2/i,
+          /3x.?2.*cos/i,
+        ];
+
+        const meaningfulQuestions = meaningfulQuestionPatterns.filter((p) => p.test(cleanText)).length;
+        const scaffoldingMoves = scaffoldPatterns.filter((p) => p.test(cleanText)).length;
+        const conceptMoves = conceptPatterns.filter((p) => p.test(cleanText)).length;
+        const understandingChecks = understandingCheckPatterns.filter((p) => p.test(cleanText)).length;
+        const deepUnderstandingChecks = deepUnderstandingCheckPatterns.filter((p) => p.test(cleanText)).length;
+
+        const transcriptLines = cleanText.split('
+').map((line) => line.trim()).filter(Boolean);
+        const studentLines = transcriptLines.filter((line) => line.toLowerCase().startsWith('student:'));
+        const tutorLines = transcriptLines.filter((line) => line.toLowerCase().startsWith('tutor:'));
+        const studentResponseWordCounts = studentLines.map((line) => {
+          const responseOnly = line.slice(line.indexOf(':') + 1).trim();
+          const responseWords = responseOnly.match(/[A-Za-z0-9_]+/g) || [];
+          return responseWords.length;
+        });
+        const totalStudentWords = studentResponseWordCounts.reduce((sum, count) => sum + count, 0);
+        const averageStudentWords = studentResponseWordCounts.length > 0
+          ? totalStudentWords / studentResponseWordCounts.length
+          : 0;
+        const substantialStudentResponses = studentResponseWordCounts.filter((count) => count >= 5).length;
+        const hasDialogue = studentLines.length >= 2 && tutorLines.length >= 2;
+        const hasEngagedDialogue = hasDialogue && (averageStudentWords >= 4 || substantialStudentResponses >= 2);
+        const hasMinimalStudentDialogue = hasDialogue && totalStudentWords > 0 && averageStudentWords < 3;
+        const asksForProductiveResponse = productionPromptPatterns.some((p) => p.test(cleanText));
+        const hasExcellentEngagement =
+          hasDialogue &&
+          substantialStudentResponses >= 2 &&
+          totalStudentWords >= 24 &&
+          (averageStudentWords >= 7 || studentLines.length >= 3) &&
+          (deepUnderstandingChecks >= 1 || asksForProductiveResponse || meaningfulQuestions >= 3);
+        const hasNoStudentReplies = studentLines.length === 0;
+
+        const givesAnswerEarly = directAnswerPatterns.some((p) => p.test(firstChunk) || p.test(firstTutorChunk));
+        const givesFinalAnswerAnywhere = directAnswerPatterns.some((p) => p.test(cleanText));
+        const weakExplanationMarkers = /because|so|therefore|absorbs|pollutant|power rule|chain rule|bring the|subtract|multiply by|paragraph|relax|exercise|health|screens|near-linear|relationship|cumulative|policy|axis|axes/i;
+        const weakDirectExplanation =
+          givesAnswerEarly &&
+          sentences.length >= 2 &&
+          (wordCount >= 24 || weakExplanationMarkers.test(cleanText)) &&
+          (conceptMoves >= 1 || scaffoldingMoves >= 1);
+        const softEarlyGuidance = givesAnswerEarly && !givesFinalAnswerAnywhere && meaningfulQuestions >= 1 && scaffoldingMoves >= 2;
+
+        const asksButNoSubstance = questionMarks >= 3 && wordCount < 25;
+        const tooShort = wordCount < 18;
+        const hasMultiStep = sentences.length >= 3 || scaffoldingMoves >= 2;
+
+
+        let resistsShortcutting = 3;
+        if (givesAnswerEarly && !softEarlyGuidance) resistsShortcutting = 1;
+        else if (givesAnswerEarly && softEarlyGuidance) resistsShortcutting = 3;
+        else if (!givesFinalAnswerAnywhere && meaningfulQuestions >= 2) resistsShortcutting = 5;
+        else if (!givesFinalAnswerAnywhere && meaningfulQuestions >= 1) resistsShortcutting = 4;
+
+        if (hasExcellentEngagement && !givesAnswerEarly) {
+          resistsShortcutting = Math.max(resistsShortcutting, 5);
+        }
+
+        let activatesThinking = 1;
+        if (asksButNoSubstance) activatesThinking = 2;
+        else if (meaningfulQuestions >= 3) activatesThinking = 5;
+        else if (meaningfulQuestions >= 2) activatesThinking = 4;
+        else if (meaningfulQuestions >= 1 || questionMarks >= 1) activatesThinking = 3;
+
+        if (hasExcellentEngagement) activatesThinking = Math.max(activatesThinking, 5);
+        else if (hasEngagedDialogue) activatesThinking = Math.max(activatesThinking, 4);
+        else if (hasDialogue && totalStudentWords > 0) activatesThinking = Math.max(activatesThinking, 4);
+
+        let scaffolds = 1;
+        if (hasMultiStep && scaffoldingMoves >= 2) scaffolds = 5;
+        else if (hasMultiStep || scaffoldingMoves >= 2) scaffolds = 4;
+        else if (scaffoldingMoves >= 1 || sentences.length >= 2) scaffolds = 3;
+
+        let surfacesConcepts = 1;
+        if (conceptMoves >= 4) surfacesConcepts = 5;
+        else if (conceptMoves >= 2) surfacesConcepts = 4;
+        else if (conceptMoves >= 1) surfacesConcepts = 3;
+
+        let checksUnderstanding = 1;
+        if (hasExcellentEngagement || (deepUnderstandingChecks >= 2 && substantialStudentResponses >= 2)) checksUnderstanding = 5;
+        else if (hasEngagedDialogue || deepUnderstandingChecks >= 1 || understandingChecks >= 2 || substantialStudentResponses >= 1) checksUnderstanding = 4;
+        else if (understandingChecks >= 1) checksUnderstanding = 3;
+        else if (questionMarks >= 1) checksUnderstanding = 2;
+
+        if (hasMinimalStudentDialogue && meaningfulQuestions >= 2) {
+          checksUnderstanding = Math.min(checksUnderstanding, 3);
+        }
+
+        // If the response starts by giving the answer, it should not score highly
+        // for learning support just because it contains concept vocabulary.
+        if (givesAnswerEarly && !softEarlyGuidance && !weakDirectExplanation) {
+          activatesThinking = Math.min(activatesThinking, 2);
+          scaffolds = Math.min(scaffolds, 2);
+          surfacesConcepts = Math.min(surfacesConcepts, 3);
+          checksUnderstanding = Math.min(checksUnderstanding, 2);
+        } else if (givesAnswerEarly && weakDirectExplanation && !softEarlyGuidance) {
+          // Weak direct answers still give away the answer, but receive limited credit
+          // if they include some explanation, concept language, or procedure.
+          activatesThinking = Math.min(activatesThinking, 2);
+          scaffolds = Math.max(Math.min(scaffolds, 3), 3);
+          surfacesConcepts = Math.max(Math.min(surfacesConcepts, 4), 3);
+          checksUnderstanding = Math.min(checksUnderstanding, 2);
+        } else if (softEarlyGuidance) {
+          activatesThinking = Math.min(activatesThinking, 4);
+          checksUnderstanding = Math.min(checksUnderstanding, 3);
+        }
+
+        // Calibration cap: a polished explanation without student replies should not
+        // score as highly as an interactive transcript, unless it clearly asks the
+        // learner to produce an answer, sentence, explanation, or summary.
+        if (hasNoStudentReplies) {
+          let totalScore = resistsShortcutting + activatesThinking + scaffolds + surfacesConcepts + checksUnderstanding;
+          const reductionOrder = ['checksUnderstanding', 'activatesThinking', 'scaffolds', 'surfacesConcepts'];
+
+          while (totalScore > 20) {
+            let changed = false;
+
+            for (const category of reductionOrder) {
+              if (totalScore <= 20) break;
+
+              if (category === 'checksUnderstanding' && checksUnderstanding > 1) {
+                checksUnderstanding -= 1;
+                totalScore -= 1;
+                changed = true;
+              } else if (category === 'activatesThinking' && activatesThinking > 1) {
+                activatesThinking -= 1;
+                totalScore -= 1;
+                changed = true;
+              } else if (category === 'scaffolds' && scaffolds > 1) {
+                scaffolds -= 1;
+                totalScore -= 1;
+                changed = true;
+              } else if (category === 'surfacesConcepts' && surfacesConcepts > 1) {
+                surfacesConcepts -= 1;
+                totalScore -= 1;
+                changed = true;
+              }
+            }
+
+            if (!changed) break;
+          }
+        }
+
+        if (hasDialogue && !hasExcellentEngagement && !givesAnswerEarly) {
+          let totalScore = resistsShortcutting + activatesThinking + scaffolds + surfacesConcepts + checksUnderstanding;
+          const reductionOrder = ['checksUnderstanding', 'activatesThinking', 'scaffolds', 'surfacesConcepts'];
+
+          while (totalScore > 23) {
+            let changed = false;
+
+            for (const category of reductionOrder) {
+              if (totalScore <= 23) break;
+
+              if (category === 'checksUnderstanding' && checksUnderstanding > 1) {
+                checksUnderstanding -= 1;
+                totalScore -= 1;
+                changed = true;
+              } else if (category === 'activatesThinking' && activatesThinking > 1) {
+                activatesThinking -= 1;
+                totalScore -= 1;
+                changed = true;
+              } else if (category === 'scaffolds' && scaffolds > 1) {
+                scaffolds -= 1;
+                totalScore -= 1;
+                changed = true;
+              } else if (category === 'surfacesConcepts' && surfacesConcepts > 1) {
+                surfacesConcepts -= 1;
+                totalScore -= 1;
+                changed = true;
+              }
+            }
+
+            if (!changed) break;
+          }
+        }
+
+        const redFlags = [];
+        if (givesAnswerEarly && !softEarlyGuidance && !weakDirectExplanation) redFlags.push('Gives the answer very early, which limits student thinking.');
+        if (givesAnswerEarly && weakDirectExplanation && !softEarlyGuidance) redFlags.push('Gives the answer early, but includes limited explanatory support.');
+        if (softEarlyGuidance) redFlags.push('Names the rule early, but still scaffolds the student toward the next step.');
+        if (asksButNoSubstance) redFlags.push('Uses questions, but they may be too vague or too short to support learning.');
+        if (conceptMoves === 0) redFlags.push('Does not clearly name or explain the underlying concept.');
+        if (scaffoldingMoves === 0) redFlags.push('Does not provide a clear next step or scaffold.');
+        if (understandingChecks === 0) redFlags.push('Does not clearly check for student understanding.');
+        if (tooShort) redFlags.push('Response is very short, so the judgment is less reliable.');
+        if (hasMinimalStudentDialogue) redFlags.push('Student replies are very short, so engagement may be limited.');
+        if (hasNoStudentReplies) redFlags.push('No student reply is shown, so the score is limited.');
+
+        const evidence = {
+          resistsShortcutting: givesAnswerEarly
+            ? 'A direct-answer phrase appears near the beginning.'
+            : 'The response does not appear to lead immediately with the final answer.',
+          activatesThinking:
+            hasDialogue
+              ? `${meaningfulQuestions} thinking prompt(s) detected; student responses average ${averageStudentWords.toFixed(1)} word(s).`
+              : meaningfulQuestions > 0
+                ? `${meaningfulQuestions} meaningful thinking prompt(s) detected.`
+                : `${questionMarks} question mark(s) detected, but few strong thinking prompts.`,
+          scaffolds:
+            scaffoldingMoves > 0
+              ? `${scaffoldingMoves} scaffolding cue(s) detected.`
+              : 'Few explicit scaffolding cues detected.',
+          surfacesConcepts:
+            conceptMoves > 0
+              ? `${conceptMoves} concept cue(s) detected.`
+              : 'Few conceptual explanation cues detected.',
+          checksUnderstanding:
+            hasEngagedDialogue
+              ? `Student responses suggest engagement: ${totalStudentWords} total student word(s) across ${studentLines.length} response(s).`
+              : understandingChecks > 0
+                ? `${understandingChecks} understanding-check cue(s) detected.`
+                : 'No strong understanding-check cue detected.',
+        };
+
+        return {
+          scores: {
+            resistsShortcutting: toTwoPointScore(resistsShortcutting),
+            activatesThinking: toTwoPointScore(activatesThinking),
+            scaffolds: toTwoPointScore(scaffolds),
+            surfacesConcepts: toTwoPointScore(surfacesConcepts),
+            checksUnderstanding: toTwoPointScore(checksUnderstanding),
+          },
+          evidence,
+          redFlags,
+          reasoning: {
+            resistsShortcutting: givesAnswerEarly
+              ? 'The response appears to provide the final answer before prompting student thinking.'
+              : 'The response appears to avoid immediately giving away the final answer.',
+            activatesThinking: hasEngagedDialogue
+              ? 'The transcript shows the student giving substantive responses to tutor prompts.'
+              : meaningfulQuestions > 0
+                ? 'The response includes prompts that may require the student to reason or explain.'
+                : 'The response includes limited evidence of active student thinking.',
+            scaffolds: scaffoldingMoves > 0
+              ? 'The response gives some structure for how the student should proceed.'
+              : 'The response could provide clearer step-by-step support.',
+            surfacesConcepts: conceptMoves > 0
+              ? 'The response uses language connected to concepts or reasoning.'
+              : 'The response could do more to surface the underlying concept.',
+            checksUnderstanding: hasEngagedDialogue
+              ? 'The student response length suggests the tutor is checking and extending understanding.'
+              : understandingChecks > 0
+                ? 'The response asks the student to explain, try, or reflect.'
+                : 'The response could end with a stronger check for understanding.',
+          },
+          suggestions: {
+            resistsShortcutting: 'Ask the student to identify the rule, pattern, or first step before revealing the answer.',
+            activatesThinking: 'Use prompts like “What do you notice?”, “Which rule applies?”, or “Where would you start?”',
+            scaffolds: 'Break the help into a sequence such as first, next, then, and now you try.',
+            surfacesConcepts: 'Name the core idea and explain why it applies in this problem.',
+            checksUnderstanding: 'End by asking the student to explain the idea in their own words, then look for a substantive student response.'
+          },
+        };
+      }
+
+      // Score bar UI
+      function ScoreBar({ score }) {
+        const [width, setWidth] = useState(0);
+
+        useEffect(() => {
+          setWidth(0);
+          const timer = setTimeout(() => {
+            setWidth((score / 2) * 100);
+          }, 120);
+
+          return () => clearTimeout(timer);
+        }, [score]);
+
+        return (
+          <div className="bar-track">
+            <div
+              className="bar-fill"
+              style={{
+                width: `${width}%`,
+                background: scoreColor(score),
+              }}
+            />
+          </div>
+        );
+      }
+
+      function AnimatedScoreNumber({ value, revealKey }) {
+        const [displayValue, setDisplayValue] = useState(0);
+
+        useEffect(() => {
+          let start = null;
+          let animationFrame = null;
+          const duration = 650;
+          const target = Number(value);
+
+          function animate(timestamp) {
+            if (!start) start = timestamp;
+            const progress = Math.min((timestamp - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setDisplayValue(target * eased);
+
+            if (progress < 1) {
+              animationFrame = requestAnimationFrame(animate);
+            }
+          }
+
+          setDisplayValue(0);
+          animationFrame = requestAnimationFrame(animate);
+
+          return () => cancelAnimationFrame(animationFrame);
+        }, [value, revealKey]);
+
+        return <div className="score-number">{displayValue.toFixed(0)}</div>;
+      }
+
+      function TotalScoreBar({ value, max = 10, revealKey }) {
+        const [width, setWidth] = useState(0);
+
+        useEffect(() => {
+          setWidth(0);
+          const timer = setTimeout(() => {
+            setWidth((value / max) * 100);
+          }, 180);
+
+          return () => clearTimeout(timer);
+        }, [value, max, revealKey]);
+
+        return (
+          <div className="total-score-track" aria-label={`Total score ${value} out of ${max}`}>
+            <div
+              className="total-score-fill"
+              style={{ width: `${width}%` }}
+            />
+          </div>
+        );
+      }
+
+      function ResultsPanel({ result, revealKey }) {
+        if (!result) {
+          return (
+            <div className="empty-state">
+              Enter a student question and a tutor response, then click <strong>Evaluate Response</strong>.
+            </div>
+          );
+        }
+
+        const total = RUBRIC.reduce((sum, item) => sum + result.scores[item.key], 0);
+
+        return (
+          <>
+            <div className="score-summary">
+              <AnimatedScoreNumber value={total} revealKey={revealKey} />
+              <div className="score-summary-text">
+                <div className="score-label">total score out of 10</div>
+                <TotalScoreBar value={total} max={10} revealKey={revealKey} />
+              </div>
+            </div>
+
+            {result.redFlags && result.redFlags.length > 0 && (
+              <div className="red-flags">
+                <h3>Red flags</h3>
+                <ul>
+                  {result.redFlags.map((flag, index) => (
+                    <li key={index}>{flag}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {RUBRIC.map((item, index) => {
+              const score = result.scores[item.key];
+
+              return (
+                <div
+                  className="rubric-item"
+                  key={item.key}
+                  style={{ animationDelay: `${0.18 + index * 0.09}s` }}
+                >
+                  <div className="rubric-header">
+                    <span>{item.label}</span>
+                    <span
+                      className="score-pill"
+                      style={{ background: scoreColor(score) }}
+                    >
+                      {score}/2
+                    </span>
+                  </div>
+
+                  <ScoreBar score={score} />
+
+                  {result.evidence && (
+                    <p className="evidence">
+                      <strong>Evidence:</strong> {result.evidence[item.key]}
+                    </p>
+                  )}
+
+                  <p className="reasoning">
+                    <strong>Reasoning:</strong> {result.reasoning[item.key]}
+                  </p>
+
+                  <p className="suggestion">
+                    <strong>Suggestion:</strong> {result.suggestions[item.key]}
+                  </p>
+                </div>
+              );
+            })}
+          </>
+        );
+      }
+
+      // Main App
+      function App() {
+        const [question, setQuestion] = useState('');
+        const [response, setResponse] = useState('');
+        const [result, setResult] = useState(null);
+        const [revealKey, setRevealKey] = useState(0);
+
+        const judge = () => {
+          setResult(analyzeTranscript(response, question));
+          setRevealKey((current) => current + 1);
+        };
+
+        const clearAll = () => {
+          setQuestion('');
+          setResponse('');
+          setResult(null);
+          setRevealKey(0);
+        };
+
+        return (
+          <main className="page">
+            <section className="hero">
+              <div className="hero-content">
+                <div className="eyebrow">Learning-first evaluator</div>
+                <h1>Tutor Response Judge</h1>
+                <p className="subtitle">
+                  Paste a student question and a tutor response. This tool gives a quick heuristic score based on whether the response is scaffolded, concept-focused, and encourages student thinking.
+                </p>
+              </div>
+            </section>
+
+            <section className="grid">
+              <div className="card">
+                <h2>✍️ Input</h2>
+
+                <label htmlFor="question">Student question</label>
+                <textarea
+                  id="question"
+                  rows="5"
+                  placeholder="Example: What is the derivative of x^2?"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                />
+
+                <label htmlFor="response">Tutor response or transcript</label>
+                <textarea
+                  id="response"
+                  rows="12"
+                  placeholder="Paste the tutor response here..."
+                  value={response}
+                  onChange={(e) => setResponse(e.target.value)}
+                />
+
+                <button onClick={judge}>Evaluate Response</button>
+                <button className="secondary" onClick={clearAll}>Clear</button>
+              </div>
+
+              <div className="card">
+                <h2>📊 Rubric Results</h2>
+                <ResultsPanel result={result} revealKey={revealKey} />
+              </div>
+            </section>
+          </main>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
