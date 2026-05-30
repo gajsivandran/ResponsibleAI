@@ -3,9 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tutor Response Judge</title>
-
-    <style>
+    <title>S.A.G.E</title>
       * {
         box-sizing: border-box;
       }
@@ -392,11 +390,10 @@
       <section class="hero">
         <div class="hero-content">
           <div class="eyebrow">Learning-first evaluator</div>
-          <h1>Tutor Response Judge</h1>
+          <h1>Tutor Res<h1>🧙‍♂️ S.A.G.E</h1>
           <p class="subtitle">
-            Paste a student question and a tutor response. This tool gives a quick heuristic score based on whether the response is scaffolded, concept-focused, and encourages student thinking.
-          </p>
-        </div>
+            Scaffolding And Guidance Evaluator
+          </p>v>
       </section>
 
       <section class="grid">
@@ -508,6 +505,9 @@
           /how would you summarize/i,
           /now what is/i,
           /what is the derivative/i,
+          /before i give/i,
+          /tells you/i,
+          /what part/i,
         ];
 
         const scaffoldPatterns = [
@@ -555,6 +555,8 @@
           /location matters/i,
           /summarize the answer/i,
           /one or two sentences/i,
+          /before i give/i,
+          /tells you/i,
         ];
 
         const conceptPatterns = [
@@ -677,12 +679,42 @@
           /^this is chain rule/i,
           /^this is a chain rule/i,
           /^the chain rule gives/i,
+          /^ozone is/i,
+          /^correct.*ozone/i,
+          /^it says/i,
+          /^just say/i,
+          /^the paragraph should/i,
+          /^spending time outside is good/i,
+          /^just write/i,
+          /^co2 emissions/i,
+          /^more cumulative co2/i,
+          /^a reflective paragraph/i,
+          /^this figure means/i,
           /^2x([^a-z0-9]|$)/i,
           /15x.?2/i,
           /3x.?2.*cos/i,
         ];
 
-        const weakExplanationMarkers = /because|\bso\b|therefore|absorbs|pollutant|power rule|chain rule|bring the|subtract|multiply by|paragraph|relax|exercise|health|screens|near-linear|relationship|cumulative|policy|axis|axes/i;
+        const explanationConnector = /because|so|therefore|since|as|which|while|but|absorbs|pollutant|reducing|limits|helps|improves|lowers|encourages|comes from/i;
+
+        const tutorPromptPatterns = [
+          /\?/,
+          /describe/i,
+          /explain/i,
+          /apply/i,
+          /state/i,
+          /combine/i,
+          /summarize/i,
+          /write/i,
+          /draft/i,
+          /identify/i,
+          /walk me through/i,
+          /put those pieces/i,
+          /turn that into/i,
+          /try writing/i,
+          /try applying/i,
+          /build/i,
+        ];
 
         const meaningfulQuestions = countMatches(meaningfulQuestionPatterns, cleanText);
         const scaffoldingMoves = countMatches(scaffoldPatterns, cleanText);
@@ -693,6 +725,10 @@
         const transcriptLines = cleanText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
         const studentLines = transcriptLines.filter((line) => line.toLowerCase().startsWith('student:'));
         const tutorLines = transcriptLines.filter((line) => line.toLowerCase().startsWith('tutor:'));
+        const tutorPromptCount = tutorLines.filter((line) =>
+          tutorPromptPatterns.some((pattern) => pattern.test(line))
+        ).length;
+
         const studentResponseWordCounts = studentLines.map((line) => {
           const responseOnly = line.slice(line.indexOf(':') + 1).trim();
           return wordCount(responseOnly);
@@ -704,23 +740,37 @@
           : 0;
         const substantialStudentResponses = studentResponseWordCounts.filter((count) => count >= 5).length;
         const hasDialogue = studentLines.length >= 2 && tutorLines.length >= 2;
+        const hasGuidedDialogue = hasDialogue && tutorPromptCount >= 2 && studentLines.length >= 2;
         const hasEngagedDialogue = hasDialogue && (averageStudentWords >= 4 || substantialStudentResponses >= 2);
         const hasMinimalStudentDialogue = hasDialogue && totalStudentWords > 0 && averageStudentWords < 3;
         const asksForProductiveResponse = productionPromptPatterns.some((pattern) => pattern.test(cleanText));
         const hasExcellentEngagement =
           hasDialogue &&
-          substantialStudentResponses >= 2 &&
-          totalStudentWords >= 24 &&
-          (averageStudentWords >= 7 || studentLines.length >= 3) &&
-          (deepUnderstandingChecks >= 1 || asksForProductiveResponse || meaningfulQuestions >= 3);
+          (
+            (
+              substantialStudentResponses >= 2 &&
+              totalStudentWords >= 20 &&
+              (averageStudentWords >= 6 || studentLines.length >= 3) &&
+              (deepUnderstandingChecks >= 1 || asksForProductiveResponse || meaningfulQuestions >= 2 || tutorPromptCount >= 3)
+            ) ||
+            (
+              hasGuidedDialogue &&
+              totalStudentWords >= 10 &&
+              conceptMoves >= 3 &&
+              (deepUnderstandingChecks >= 1 || asksForProductiveResponse || tutorPromptCount >= 3)
+            )
+          );
         const hasNoStudentReplies = studentLines.length === 0;
 
         const givesAnswerEarly = directAnswerPatterns.some((pattern) => pattern.test(firstChunk) || pattern.test(firstTutorChunk));
         const givesFinalAnswerAnywhere = directAnswerPatterns.some((pattern) => pattern.test(cleanText));
+        const hasExplanationConnector = explanationConnector.test(cleanText);
         const weakDirectExplanation =
           givesAnswerEarly &&
-          sentences.length >= 2 &&
-          (totalWordCount >= 24 || weakExplanationMarkers.test(cleanText)) &&
+          (
+            (totalWordCount >= 14 && (sentences.length >= 2 || hasExplanationConnector)) ||
+            (hasExplanationConnector && totalWordCount >= 10)
+          ) &&
           (conceptMoves >= 1 || scaffoldingMoves >= 1);
         const softEarlyGuidance = givesAnswerEarly && !givesFinalAnswerAnywhere && meaningfulQuestions >= 1 && scaffoldingMoves >= 2;
 
@@ -734,6 +784,10 @@
         else if (!givesFinalAnswerAnywhere && meaningfulQuestions >= 2) resistsShortcutting = 5;
         else if (!givesFinalAnswerAnywhere && meaningfulQuestions >= 1) resistsShortcutting = 4;
 
+        if (hasGuidedDialogue && !givesAnswerEarly) {
+          resistsShortcutting = Math.max(resistsShortcutting, 5);
+        }
+
         if (hasExcellentEngagement && !givesAnswerEarly) {
           resistsShortcutting = Math.max(resistsShortcutting, 5);
         }
@@ -744,6 +798,7 @@
         else if (meaningfulQuestions >= 2) activatesThinking = 4;
         else if (meaningfulQuestions >= 1 || questionMarks >= 1) activatesThinking = 3;
 
+        if (hasGuidedDialogue && !givesAnswerEarly) activatesThinking = Math.max(activatesThinking, 5);
         if (hasExcellentEngagement) activatesThinking = Math.max(activatesThinking, 5);
         else if (hasEngagedDialogue) activatesThinking = Math.max(activatesThinking, 4);
         else if (hasDialogue && totalStudentWords > 0) activatesThinking = Math.max(activatesThinking, 4);
@@ -753,18 +808,23 @@
         else if (hasMultiStep || scaffoldingMoves >= 2) scaffolds = 4;
         else if (scaffoldingMoves >= 1 || sentences.length >= 2) scaffolds = 3;
 
+        if (hasGuidedDialogue && !givesAnswerEarly) scaffolds = Math.max(scaffolds, 4);
+        if (hasExcellentEngagement && !givesAnswerEarly) scaffolds = Math.max(scaffolds, 5);
+
         let surfacesConcepts = 1;
         if (conceptMoves >= 4) surfacesConcepts = 5;
         else if (conceptMoves >= 2) surfacesConcepts = 4;
         else if (conceptMoves >= 1) surfacesConcepts = 3;
 
+        if (hasExcellentEngagement && conceptMoves >= 1) surfacesConcepts = Math.max(surfacesConcepts, 5);
+
         let checksUnderstanding = 1;
         if (hasExcellentEngagement || (deepUnderstandingChecks >= 2 && substantialStudentResponses >= 2)) checksUnderstanding = 5;
-        else if (hasEngagedDialogue || deepUnderstandingChecks >= 1 || understandingChecks >= 2 || substantialStudentResponses >= 1) checksUnderstanding = 4;
+        else if (hasGuidedDialogue || hasEngagedDialogue || deepUnderstandingChecks >= 1 || understandingChecks >= 2 || substantialStudentResponses >= 1) checksUnderstanding = 4;
         else if (understandingChecks >= 1) checksUnderstanding = 3;
         else if (questionMarks >= 1) checksUnderstanding = 2;
 
-        if (hasMinimalStudentDialogue && meaningfulQuestions >= 2) {
+        if (hasMinimalStudentDialogue && meaningfulQuestions >= 2 && !hasGuidedDialogue) {
           checksUnderstanding = Math.min(checksUnderstanding, 3);
         }
 
@@ -817,10 +877,10 @@
           let totalScore = resistsShortcutting + activatesThinking + scaffolds + surfacesConcepts + checksUnderstanding;
           const reductionOrder = ['checksUnderstanding', 'activatesThinking', 'scaffolds', 'surfacesConcepts'];
 
-          while (totalScore > 23) {
+          while (totalScore > 24) {
             let changed = false;
             for (const category of reductionOrder) {
-              if (totalScore <= 23) break;
+              if (totalScore <= 24) break;
               if (category === 'checksUnderstanding' && checksUnderstanding > 1) {
                 checksUnderstanding -= 1;
                 totalScore -= 1;
