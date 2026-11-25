@@ -384,6 +384,73 @@
           scroll-behavior: auto !important;
         }
       }
+    
+      .tagline { margin: 6px 0 0; font-weight: 700; color: #fff; }
+      .steps {
+        display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 22px;
+        list-style: none; padding: 0; counter-reset: step;
+      }
+      @media (min-width: 760px) { .steps { grid-template-columns: repeat(4, 1fr); } }
+      .steps li {
+        counter-increment: step; background: rgba(255,255,255,0.9); border-radius: 18px;
+        padding: 14px 16px 14px 56px; position: relative; font-size: 0.93rem;
+        box-shadow: 0 10px 24px rgba(15,23,42,0.07); border: 1px solid rgba(255,255,255,0.8);
+      }
+      .steps li::before {
+        content: counter(step); position: absolute; left: 14px; top: 14px; width: 30px; height: 30px;
+        border-radius: 999px; display: grid; place-items: center; font-weight: 900; color: #fff;
+        background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      }
+      .steps strong { display: block; margin-bottom: 2px; }
+      .step-block { border-top: 1px solid #e5e7eb; padding-top: 18px; margin-top: 18px; }
+      .step-block:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+      .step-title { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.05rem; margin: 0 0 6px; }
+      .step-num {
+        width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; flex: none;
+        background: #2563eb; color: #fff; font-size: 0.85rem;
+      }
+      .step-help { margin: 0 0 12px; color: #4b5563; font-size: 0.93rem; }
+      .prompt-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+      .prompt-picker button {
+        background: #eef2ff; color: #1e3a8a; box-shadow: none; border-radius: 14px; padding: 10px 12px;
+        font-size: 0.9rem; text-align: left; border: 2px solid transparent;
+      }
+      .prompt-picker button:hover { background: #dbeafe; }
+      .prompt-picker button.selected { border-color: #2563eb; background: #dbeafe; }
+      .prompt-picker button small { display: block; font-weight: 600; opacity: 0.8; }
+      .chosen-question {
+        font-size: 0.9rem; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px;
+        padding: 10px 12px; margin-bottom: 8px; color: #334155;
+      }
+      .copy-box {
+        background: #0f172a; color: #e2e8f0; border-radius: 14px; padding: 14px; font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 0.88rem; margin-bottom: 10px; line-height: 1.45;
+      }
+      button.small { padding: 8px 14px; font-size: 0.9rem; }
+      .copied { color: #16a34a; font-weight: 800; margin-left: 8px; font-size: 0.9rem; }
+      .actions { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 8px; }
+      .actions button.secondary { margin-left: 0; }
+      .inline-warning {
+        display: none; margin: 10px 0 0; padding: 10px 12px; border-radius: 12px;
+        background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-weight: 700; font-size: 0.92rem;
+      }
+      .record-box {
+        margin-bottom: 18px; padding: 16px 18px; border-radius: 18px; background: #f0fdf4;
+        border: 2px solid #86efac; animation: revealPanel 0.55s ease 0.08s both;
+      }
+      .record-box h3 { margin: 0 0 6px; }
+      .record-box ol { margin: 6px 0 0; padding-left: 20px; }
+      .record-box .record-line { font-size: 1.05rem; }
+      .meta-notes { margin: 0 0 16px; padding: 12px 14px; border-radius: 14px; background: #f8fafc; border: 1px solid #e5e7eb; color: #374151; font-size: 0.92rem; }
+      .meta-notes p { margin: 2px 0; }
+      .red-flags li.wrong { color: #991b1b; font-weight: 800; }
+      .red-flags.has-wrong { background: linear-gradient(135deg, #fef2f2, #fff7ed); border-color: #fca5a5; }
+      .section-label { font-weight: 900; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.8rem; margin: 6px 0 4px; }
+      details.how { margin-top: 16px; font-size: 0.92rem; color: #374151; }
+      details.how summary { cursor: pointer; font-weight: 700; }
+      details.how ul { padding-left: 20px; margin: 8px 0 0; }
+      .empty-state ol { margin: 8px 0 0; padding-left: 20px; }
+      .version { font-size: 0.8rem; opacity: 0.8; margin-top: 8px; }
     </style>
   </head>
 
@@ -391,602 +458,642 @@
     <main class="page">
       <section class="hero">
         <div class="hero-content">
-          <div class="eyebrow">Learning-first evaluator</div>
+          <div class="eyebrow">C ENV 190 · Battle Bots</div>
           <h1>🧙‍♂️ S.A.G.E</h1>
-          <p class="subtitle">
-            Scaffolding And Guidance Evaluator
-          </p>
+          <p class="subtitle">Scaffolding And Guidance Evaluator</p>
+          <p class="tagline">Test your tutor bot. Score it. Fix it. Battle again.</p>
         </div>
       </section>
 
+      <ol class="steps" aria-label="How a round works">
+        <li><strong>Chat (3–4 min)</strong>New chat, paste your bot, ask today's exact question. Your partner plays the student.</li>
+        <li><strong>Get the transcript</strong>Paste our transcript request (below) into the same chat. Copy what it gives back.</li>
+        <li><strong>Score it here</strong>Pick the question, paste the transcript, press <em>Score my bot</em>.</li>
+        <li><strong>Record and fix</strong>Write the score on your worksheet. Fix your bot before the next round.</li>
+      </ol>
+
       <section class="grid">
         <div class="card">
-          <h2>✍️ Input</h2>
-
-          <label for="question">Student question</label>
-          <textarea id="question" rows="5" placeholder="Example: What is the derivative of x^2?"></textarea>
-
-          <label for="response">Tutor response or transcript</label>
-          <textarea id="response" rows="12" placeholder="Paste the tutor response here..."></textarea>
-
-          <button id="evaluateButton" type="button">Evaluate Response</button>
-          <button id="clearButton" class="secondary" type="button">Clear</button>
-
-          <div class="test-note" id="testStatus">
-            Built-in checks run automatically in the browser console. Open DevTools to see details.
+          <div class="step-block">
+            <p class="step-title"><span class="step-num">A</span>Which prompt did you test?</p>
+            <p class="step-help">Tap the prompt number for this round. This tells S.A.G.E which answer key to use.</p>
+            <div class="prompt-picker" id="promptPicker"></div>
+            <div class="chosen-question" id="chosenQuestion">No prompt chosen yet.</div>
+            <details>
+              <summary style="cursor:pointer;font-size:0.9rem;font-weight:700;color:#374151">Testing a different question?</summary>
+              <label for="question" style="margin-top:8px">Type the exact question</label>
+              <textarea id="question" rows="3" placeholder="Paste the exact question you asked your bot"></textarea>
+            </details>
           </div>
+
+          <div class="step-block">
+            <p class="step-title"><span class="step-num">B</span>Ask your bot for the transcript</p>
+            <p class="step-help">When time is up, copy this, paste it into <strong>the same chat</strong>, and send.</p>
+            <div class="copy-box" id="transcriptAsk">Reproduce our whole conversation word for word. Do not summarize, shorten or fix anything. Label each of my messages Student: and each of your replies Tutor:</div>
+            <button id="copyAskButton" class="small" type="button">Copy request</button><span class="copied" id="copiedMsg" hidden>Copied!</span>
+          </div>
+
+          <div class="step-block">
+            <p class="step-title"><span class="step-num">C</span>Paste the transcript</p>
+            <p class="step-help">Paste everything the bot gave back. Each turn should start with <strong>Student:</strong> or <strong>Tutor:</strong>.</p>
+            <textarea id="response" rows="11" placeholder="Student: ...&#10;Tutor: ...&#10;Student: ..."></textarea>
+            <div class="actions">
+              <button id="evaluateButton" type="button">Score my bot</button>
+              <button id="clearButton" class="secondary" type="button">Start next round</button>
+            </div>
+            <div class="inline-warning" id="inlineWarning"></div>
+          </div>
+
+          <details class="how">
+            <summary>How S.A.G.E scores (5 criteria × 2 points)</summary>
+            <ul>
+              <li>Only the <strong>tutor's</strong> lines earn credit for prompting. The student's words count as evidence that the prompting worked.</li>
+              <li>If the tutor states the answer before the student works it out, <em>Resists Shortcutting</em> scores 0.</li>
+              <li>If the tutor teaches or agrees with something wrong, the round is capped at 4/10.</li>
+              <li>S.A.G.E checks patterns. It doesn't understand the conversation. Read the evidence and decide whether the score is fair.</li>
+            </ul>
+          </details>
+
+          <div class="test-note" id="testStatus">Built-in checks run automatically in the browser console.</div>
         </div>
 
         <div class="card">
-          <h2>📊 Rubric Results</h2>
-          <div id="results">
-            <div class="empty-state">
-              Enter a student question and a tutor response, then click <strong>Evaluate Response</strong>.
-            </div>
-          </div>
+          <h2>📊 Your Score</h2>
+          <div id="results"></div>
         </div>
       </section>
     </main>
 
     <script>
-      'use strict';
+'use strict';
 
-      const RUBRIC = [
-        { key: 'resistsShortcutting', label: 'Resists Shortcutting' },
-        { key: 'activatesThinking', label: 'Activates Thinking' },
-        { key: 'scaffolds', label: 'Scaffolds Appropriately' },
-        { key: 'surfacesConcepts', label: 'Surfaces Concepts' },
-        { key: 'checksUnderstanding', label: 'Checks Understanding' },
+/* =========================================================
+   S.A.G.E v2 engine
+   Pure functions only: no DOM. Tested in Node, embedded in the page.
+   ========================================================= */
+
+const RUBRIC = [
+  { key: 'resistsShortcutting', label: 'Resists Shortcutting' },
+  { key: 'activatesThinking', label: 'Activates Thinking' },
+  { key: 'scaffolds', label: 'Scaffolds Appropriately' },
+  { key: 'surfacesConcepts', label: 'Surfaces Concepts' },
+  { key: 'checksUnderstanding', label: 'Checks Understanding' },
+];
+
+/* ---------- text helpers ---------- */
+
+function normMath(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/²/g, '^2').replace(/³/g, '^3')
+    .replace(/\\left|\\right|\\,|\\;|\$/g, '')
+    .replace(/\\(sin|cos|cdot|times)/g, '$1')
+    .replace(/\^\{([^}]*)\}/g, '^$1')
+    .replace(/[{}]/g, '')
+    .replace(/\*\*/g, '^')
+    .replace(/\bx squared\b/g, 'x^2')
+    .replace(/\bcosine\b/g, 'cos').replace(/\bsine\b/g, 'sin')
+    .replace(/\btwo x\b/g, '2x')
+    .replace(/\b(times|multiplied by|cdot)\b/g, '')
+    .replace(/[\s*·×⋅]/g, '');
+}
+
+function normSpaced(s) {
+  return String(s || '').toLowerCase()
+    .replace(/²/g, '^2').replace(/\*\*/g, '^').replace(/[*·×⋅]/g, ' ')
+    .replace(/\bx squared\b/g, 'x^2').replace(/\btwo x\b/g, '2x')
+    .replace(/\s+/g, ' ');
+}
+
+function sentencesOf(text) {
+  return String(text || '')
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function words(text) {
+  return (String(text || '').match(/[A-Za-z0-9^()]+/g) || []).length;
+}
+
+const NEGATION = /\b(not|isn't|isnt|aren't|no|never|don't|doesn't|wouldn't|instead of|rather than|mistake|wrong|incorrect|misconception|common error|careful)\b/i;
+const AFFIRM_OPEN = /^\W*(yes|yep|yeah|exactly|correct|right|perfect|great|nice|good job|well done|that's it|that's right|spot on|you got it)\b/i;
+const HEDGE = /\b(but|however|almost|close|not quite|partly|partially|careful|hmm)\b/i;
+
+/* ---------- transcript parsing ---------- */
+
+const STUDENT_LABEL = 'student|me|user|you|human|learner';
+const TUTOR_LABEL = 'tutor|ai|assistant|bot|chatgpt|gpt|claude|gemini|copilot|llama|grok|perplexity|model|sage';
+const LABEL_RE = new RegExp(
+  `^(${STUDENT_LABEL}|${TUTOR_LABEL})(?:\\s+(?:said|says|wrote|asked|replied))?(\\s*\\([^)]*\\))?\\s*(?:[:：]|\\s[-–—]\\s|$)\\s*(.*)$`,
+  'i'
+);
+const STUDENT_RE = new RegExp(`^(${STUDENT_LABEL})$`, 'i');
+
+function cleanLine(line) {
+  return line
+    .replace(/\*\*|__/g, '')
+    .replace(/^[\s>#*\-_•]+/, '')
+    .trim();
+}
+
+function parseTranscript(raw) {
+  const turns = [];
+  let current = null;
+  const lines = String(raw || '').split(/\r?\n/);
+  for (const rawLine of lines) {
+    const line = cleanLine(rawLine);
+    if (!line) continue;
+    const m = line.match(LABEL_RE);
+    if (m) {
+      const speaker = STUDENT_RE.test(m[1].trim()) ? 'student' : 'tutor';
+      current = { speaker, text: (m[3] || '').trim() };
+      turns.push(current);
+    } else if (current) {
+      current.text = current.text ? `${current.text}\n${line}` : line;
+    }
+  }
+  const labelled = turns.filter((t) => t.text);
+  if (labelled.length === 0 && String(raw || '').trim()) {
+    return { turns: [{ speaker: 'tutor', text: String(raw).trim() }], unlabelled: true };
+  }
+  return { turns: labelled, unlabelled: false };
+}
+
+/* ---------- prompt answer keys ----------
+   leak(sentence, turnText): tutor states the final answer
+   studentAnswer(turnText): student produced the answer
+   wrong(sentence): tutor asserts a misconception
+   studentWrong(turnText): student states a misconception (used to catch tutor endorsement)
+   concepts: [label, regex] pairs that a good tutor surfaces or elicits
+*/
+
+const ozoneYes = /\bozone\b[^.?!]{0,30}\b(is|acts as|counts as|functions as|qualifies as|behaves as)\b[^.?!]{0,25}\b(greenhouse gas|ghg)/i;
+const ozoneNo = /\bozone\b[^.?!]{0,30}\b(is not|isn't|is no|does not act as|doesn't act as|not)\b[^.?!]{0,15}\b(a )?(greenhouse gas|ghg)/i;
+const spmIdeas = [
+  /\bcumulative\b|\btotal (co2|carbon|emissions)\b|\badd(s|ed)? up\b/i,
+  /\b(near[- ]?linear|linear|proportional|straight line|every tonne|each tonne|per (tonne|1,?000 gt))\b/i,
+  /\b(warming|temperature)\b/i,
+  /\b(scenario|ssp|pathway|future emissions|depends on how much)\b/i,
+  /\b(net[- ]zero|carbon budget|stop (emitting|warming)|limit warming)\b/i,
+];
+function spmIdeaCount(text) {
+  return spmIdeas.filter((re) => re.test(text)).length;
+}
+
+const PROMPTS = [
+  {
+    id: 'sinx2',
+    title: 'Prompt #1: derivative of sin(x^2)',
+    match: (q) => /sin\(?x\^2\)?/.test(normMath(q)) && /deriv|d\/dx|differentiat/.test(q.toLowerCase()),
+    leak: (s) => /2xcos\(x\^2\)|cos\(x\^2\)\)?\(?2x|\(2x\)cos\(x\^2\)/.test(normMath(s)),
+    studentAnswer: (t) => /2xcos\(x\^2\)|cos\(x\^2\)\)?\(?2x|\(2x\)cos\(x\^2\)/.test(normMath(t)),
+    giveaway: /\b(use|apply|this is|you need|it's|it is) (the )?chain rule\b/i,
+    wrong: (s) => {
+      const n = normMath(s);
+      if (/product rule/i.test(s) && !NEGATION.test(s) && !/\?/.test(s)) return true;
+      if (/(answeris|answer:|derivativeofsin\(x\^2\)(is|=)|f'\(x\)=|y'=|dy\/dx=)cos\(x\^2\)(?!\)?\(?2x)/.test(n)) return true;
+      if (/(answeris|derivativeis|f'\(x\)=|=)(cos\(2x\)|2xcos\(x\)(?!\^))/.test(n) && !NEGATION.test(s)) return true;
+      return false;
+    },
+    studentWrong: (t) => {
+      const n = normMath(t);
+      return /product rule/i.test(t) || /^(it'?s|itis|the answer is|answer:)?cos\(x\^2\)\.?$/.test(n) || /cos\(2x\)/.test(n);
+    },
+    concepts: [
+      ['chain rule', /\bchain rule\b/i],
+      ['composition / nested function', /\b(composit\w*|nested|function (of|inside) a function|inside (of )?(another|the sine))\b/i],
+      ['inside (inner) function', /\b(inside|inner) (function|part|piece)\b|\binside\b[^.?!]{0,20}\bx\^?2|\bu\s*=\s*x/i],
+      ['outside (outer) function', /\b(outside|outer) (function|part|piece|layer)\b/i],
+      ['multiply by the inside derivative', /\b(multiply|times|product)\b[^.?!]{0,40}\b(derivative of the (inside|inner)|inner derivative|2x)\b/i],
+    ],
+  },
+  {
+    id: 'x2',
+    title: 'Test: derivative of x^2',
+    match: (q) => /derivativeofx\^2|d\/dx\(?x\^2|differentiatex\^2/.test(normMath(q)) && !/sin/.test(q.toLowerCase()),
+    leak: (s) => {
+      if (/\?/.test(s)) return false;
+      const n = normSpaced(s);
+      // For x^2, a standalone "2x" in a statement IS the answer ("2xh" or "2x^2" are not).
+      return /(^|[^0-9a-z^(])2\s*x(\^1)?(?![\^a-z0-9(])/.test(n);
+    },
+    studentAnswer: (t) => /(^|[^0-9a-z^(])2\s*x(\^1)?(?![\^a-z0-9(])/.test(normSpaced(t)),
+    giveaway: /\b(use|apply|this is|you need) (the )?power rule\b/i,
+    wrong: (s) => {
+      const n = normMath(s);
+      if (NEGATION.test(s) || /\?/.test(s)) return false;
+      return /(is|=|answer)(2x\^2|x\^3\/3|1\/3x\^3|x\^2\/2)(?![0-9])/.test(n);
+    },
+    studentWrong: (t) => /2x\^2|x\^3\/3|1\/3x\^3/.test(normMath(t)),
+    concepts: [
+      ['power rule', /\bpower rule\b/i],
+      ['bring the exponent down', /\b(bring|brings|bringing|move|moves|pull)\b[^.?!]{0,30}\b(exponent|power|the 2)\b|\bexponent\b[^.?!]{0,30}\b(down|front)\b/i],
+      ['reduce the exponent by one', /\b(subtract|reduce|lower|decrease|minus|drop)\b[^.?!]{0,30}\b(one|1|by one)\b|\bn\s*-\s*1\b/i],
+      ['slope / rate of change', /\b(slope|rate of change|tangent line|steepness)\b/i],
+      ['limit definition', /\blimit\b|difference quotient|\(x\s*\+\s*h\)/i],
+    ],
+  },
+  {
+    id: 'ozone',
+    title: 'Prompt #2: Is ozone a greenhouse gas?',
+    match: (q) => /\bozone\b/i.test(q) && /greenhouse|ghg/i.test(q),
+    leak: (s) => !/\?/.test(s) && ozoneYes.test(s) && !ozoneNo.test(s),
+    leakOpen: /^\W*(yes|yep|yeah|correct|it is|it does|absolutely|indeed)\b/i,
+    studentAnswer: (t) =>
+      (ozoneYes.test(t) && !ozoneNo.test(t)) ||
+      (/^\W*(yes|yeah|yep|it is|i think (it is|so|yes))\b/i.test(t) && /\b(infrared|heat|trap|absorb|radiat|warm)/i.test(t)),
+    giveaway: null,
+    wrong: (s) => {
+      if (/\?/.test(s)) return false;
+      if (ozoneNo.test(s) && !/\b(misconception|people think|common|might think|some say)\b/i.test(s)) return true;
+      if (/\bozone hole\b[^.?!]{0,40}\b(causes?|leads? to|drives?|is (the )?(main )?cause of|responsible for)\b[^.?!]{0,25}\b(global )?warming\b/i.test(s) && !NEGATION.test(s)) return true;
+      return false;
+    },
+    studentWrong: (t) => /^\W*no\b/i.test(t) || ozoneNo.test(t) || /\bozone hole\b[^.?!]{0,40}\b(causes?|leads? to)\b[^.?!]{0,20}warming/i.test(t),
+    concepts: [
+      ['absorbs infrared / traps heat', /\b(infrared|ir\b|longwave|long-wave|outgoing heat|trap(s|ping)? heat|absorb(s|ing)? (heat|radiation|infrared))/i],
+      ['ground-level (tropospheric) ozone / pollutant', /\b(tropospher\w*|ground[- ]level|surface ozone|smog|pollutant|air pollution)\b/i],
+      ['stratospheric ozone layer / UV shield', /\b(stratospher\w*|ozone layer|ultraviolet|\buv\b)/i],
+      ['ozone hole is a separate issue from warming', /\bozone hole\b|\b(different|separate|distinct) (issue|problem|from)\b/i],
+      ['location (altitude) changes its role', /\b(where it is|location|altitude|height|which layer|depends where)\b/i],
+    ],
+  },
+  {
+    id: 'spm10',
+    title: 'Prompt #3: Summarize IPCC AR6 Figure SPM.10',
+    match: (q) => /spm\.?\s*10|every tonne|cumulative co2/i.test(q),
+    leak: (s, turnText) => {
+      if (/here('s| is) (a|the|your|one|my) (possible |sample |draft |quick )?((2|two)[-–]?(3|three)?|brief|short|concise)?[- ]?(sentence )?summary/i.test(s)) return true;
+      const declaratives = sentencesOf(turnText).filter((x) => !/\?/.test(x));
+      return declaratives.length >= 2 && spmIdeaCount(declaratives.join(' ')) >= 4;
+    },
+    studentAnswer: (t) => words(t) >= 15 && spmIdeaCount(t) >= 3,
+    giveaway: null,
+    wrong: (s) => {
+      if (/\?/.test(s) || NEGATION.test(s)) return false;
+      if (/\b(exponential|logarithmic)\w*\b/i.test(s) && /\b(relationship|curve|increase|warming|rises?)\b/i.test(s)) return true;
+      if (/\btemperature\w*\b[^.?!]{0,30}\b(stop|stabili[sz]e)\w*\b[^.?!]{0,30}\bemissions\b[^.?!]{0,15}\b(peak|stop rising|level off|plateau)/i.test(s)) return true;
+      return false;
+    },
+    studentWrong: (t) => /\bexponential/i.test(t),
+    concepts: [
+      ['axes: cumulative CO2 vs temperature', /\b(x[- ]axis|y[- ]axis|horizontal axis|vertical axis|axes)\b/i],
+      ['near-linear relationship', spmIdeas[1]],
+      ['cumulative (total) emissions, not annual', spmIdeas[0]],
+      ['scenarios (SSPs) set future warming', spmIdeas[3]],
+      ['uncertainty range / shaded bands', /\b(shad(ed|ing)|uncertainty|range|spread|band|confidence)\b/i],
+      ['net zero / carbon budget implication', spmIdeas[4]],
+    ],
+  },
+];
+
+const GENERIC_CONCEPTS = [
+  ['names a rule or principle', /\b(rule|principle|law|definition|property)\b/i],
+  ['gives a reason', /\b(because|since|so that|which means|that's why)\b/i],
+  ['connects to meaning', /\b(represents|means|tells us|stands for|measures)\b/i],
+];
+
+/* ---------- pedagogy detectors (tutor lines only, word-bounded) ---------- */
+
+const CHECKIN_ONLY = /^\W*(does (that|this) make sense|ok(ay)?|got it|ready|sound good|make sense|any questions|shall we|want to (try|continue))\b/i;
+const OPEN_TASK = /\b(try|explain|describe|write|draft|tell me|walk me through|identify|look at|predict|compare|summari[sz]e|show me|work out|figure out|think about|guess)\b/i;
+const SCAFFOLD_CUE = /\b(first|next|then|step|hint|start (with|by)|let's break|break (it|this) down|piece|one part|focus on|look at)\b/i;
+const CHECK_CUE = /\b(in your own words|explain (why|how|back|it)|why (does|do|is|would)|how do you know|what would happen|what if|try (this|another|one|a similar)|now you try|apply|would (that|this|it) (work|hold|change)|how would you|what would you|summari[sz]e|teach (it|me)|check (yourself|your)|how (does|did) (that|this))\b/i;
+const PUSHBACK = /\b(just (tell|give|say)|give me the answer|what('s| is) the answer|tell me the answer|i (don't|do not|dont) (know|care|get it)|skip|hurry|no time|can you just|stop asking)\b/i;
+
+function isOpenPrompt(turnText) {
+  return sentencesOf(turnText).some(
+    (s) => (/\?/.test(s) && !CHECKIN_ONLY.test(s)) || (OPEN_TASK.test(s) && !/\byou (can|could|might) try\b.*\bif\b/i.test(s))
+  );
+}
+
+function shorten(text, n = 140) {
+  const t = String(text).replace(/\s+/g, ' ').trim();
+  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+}
+
+/* ---------- main analysis ---------- */
+
+function detectPrompt(question, turns) {
+  const q = String(question || '').trim() || (turns.find((t) => t.speaker === 'student') || {}).text || '';
+  return PROMPTS.find((p) => p.match(q)) || null;
+}
+
+function analyzeTranscript(text, question) {
+  const { turns, unlabelled } = parseTranscript(text);
+  const key = detectPrompt(question, turns);
+  const qNorm = normMath(question || '');
+
+  // Drop a student turn that just restates the posed question.
+  const studentTurnsAll = turns.filter((t) => t.speaker === 'student');
+  const isRestatement = (t) => qNorm && (normMath(t.text) === qNorm || (normMath(t.text).includes(qNorm) && words(t.text) <= words(question) + 3));
+  const tutorTurns = turns.filter((t) => t.speaker === 'tutor');
+  const studentReplies = studentTurnsAll.filter((t) => !isRestatement(t));
+
+  const firstIdx = (pred) => turns.findIndex(pred);
+  const evidence = {};
+  const redFlags = [];
+  const notes = [];
+
+  // --- answer leak and student production
+  let leakIdx = -1;
+  let leakQuote = '';
+  let studentAnswerIdx = -1;
+  let wrongQuote = '';
+  let endorsedQuote = '';
+
+  if (key) {
+    turns.forEach((t, i) => {
+      if (t.speaker === 'tutor' && leakIdx === -1) {
+        const sents = sentencesOf(t.text);
+        const hit = sents.find((s) => key.leak(s, t.text));
+        const openHit = key.leakOpen && key.leakOpen.test(t.text) && (i === 0 || (turns[i - 1] && turns[i - 1].speaker === 'student' && isRestatement(turns[i - 1])));
+        if (hit || openHit) {
+          leakIdx = i;
+          leakQuote = hit || sents[0];
+        }
+      }
+      if (t.speaker === 'student' && studentAnswerIdx === -1 && !isRestatement(t) && key.studentAnswer(t.text)) {
+        studentAnswerIdx = i;
+      }
+      if (t.speaker === 'tutor' && !wrongQuote) {
+        const w = sentencesOf(t.text).find((s) => key.wrong(s));
+        if (w) wrongQuote = w;
+      }
+      if (t.speaker === 'tutor' && !endorsedQuote && i > 0 && turns[i - 1].speaker === 'student'
+        && key.studentWrong(turns[i - 1].text) && AFFIRM_OPEN.test(t.text) && !HEDGE.test(sentencesOf(t.text)[0] || '')) {
+        endorsedQuote = `Student: "${shorten(turns[i - 1].text, 70)}" → Tutor: "${shorten(sentencesOf(t.text)[0], 60)}"`;
+      }
+    });
+  }
+
+  const leakedBeforeStudent = leakIdx !== -1 && (studentAnswerIdx === -1 || leakIdx < studentAnswerIdx);
+  const pushbackIdx = firstIdx((t) => t.speaker === 'student' && PUSHBACK.test(t.text));
+  const caved = leakedBeforeStudent && pushbackIdx !== -1 && leakIdx > pushbackIdx;
+  const correctnessError = Boolean(wrongQuote || endorsedQuote);
+
+  // --- prompts, scaffolds, checks (tutor only)
+  const promptTurns = tutorTurns.filter((t) => isOpenPrompt(t.text));
+  const tutorBeforeAnswer = turns
+    .slice(0, studentAnswerIdx === -1 ? turns.length : studentAnswerIdx)
+    .filter((t) => t.speaker === 'tutor');
+  const steps = tutorBeforeAnswer.filter((t) => isOpenPrompt(t.text)).length;
+  const scaffoldCueTurn = tutorTurns.find((t) => SCAFFOLD_CUE.test(t.text));
+  const checkTurn = tutorTurns.find((t) => sentencesOf(t.text).some((s) => CHECK_CUE.test(s)));
+  const substantiveReplies = studentReplies.filter((t) => words(t.text) >= 5).length;
+  const avgStudentWords = studentReplies.length
+    ? studentReplies.reduce((a, t) => a + words(t.text), 0) / studentReplies.length
+    : 0;
+
+  // --- concepts: tutor turns, or student turns that came after a tutor prompt
+  const conceptList = key ? key.concepts : GENERIC_CONCEPTS;
+  const firstTutorIdx = firstIdx((t) => t.speaker === 'tutor');
+  const conceptHits = conceptList.filter(([, re]) =>
+    turns.some((t, i) => (t.speaker === 'tutor' || (firstTutorIdx !== -1 && i > firstTutorIdx && !isRestatement(t))) && re.test(t.text))
+  ).map(([label]) => label);
+  const tutorConceptHits = conceptList.filter(([, re]) => tutorTurns.some((t) => re.test(t.text))).length;
+
+  /* ---------- scores (0-2) ---------- */
+  const s = {};
+
+  // 1. Resists shortcutting
+  if (!key) {
+    s.resistsShortcutting = promptTurns.length >= 1 ? 1 : 0;
+    evidence.resistsShortcutting = 'Question not recognised, so answer leaks cannot be checked. Scored only on whether the tutor prompted at all.';
+  } else if (leakedBeforeStudent) {
+    s.resistsShortcutting = 0;
+    evidence.resistsShortcutting = `Tutor gave the answer before the student produced it: "${shorten(leakQuote)}"`;
+  } else if (key.giveaway && tutorTurns[0] && sentencesOf(tutorTurns[0].text).some((x) => key.giveaway.test(x) && !/\?/.test(x))) {
+    s.resistsShortcutting = 1;
+    evidence.resistsShortcutting = `No final answer leaked, but the first reply names the method outright: "${shorten(sentencesOf(tutorTurns[0].text).find((x) => key.giveaway.test(x)))}"`;
+  } else if (studentReplies.length === 0) {
+    s.resistsShortcutting = 1;
+    evidence.resistsShortcutting = 'No answer leaked, but there are no student replies, so we cannot see whether the bot holds out.';
+  } else {
+    s.resistsShortcutting = 2;
+    evidence.resistsShortcutting = studentAnswerIdx !== -1
+      ? 'The student reached the answer before the tutor stated it.'
+      : 'The tutor never stated the final answer.';
+    if (pushbackIdx !== -1) evidence.resistsShortcutting += ' It held out after the student pushed for the answer.';
+  }
+
+  // 2. Activates thinking
+  if (promptTurns.length >= 2 && substantiveReplies >= 2) s.activatesThinking = 2;
+  else if (promptTurns.length >= 1) s.activatesThinking = 1;
+  else s.activatesThinking = 0;
+  evidence.activatesThinking = `${promptTurns.length} tutor turn(s) asked a real question or set a task; ${substantiveReplies} student repl${substantiveReplies === 1 ? 'y' : 'ies'} of 5+ words (average ${avgStudentWords.toFixed(1)} words).`;
+
+  // 3. Scaffolds
+  if ((steps >= 3 || (steps >= 2 && scaffoldCueTurn)) && !leakedBeforeStudent) s.scaffolds = 2;
+  else if (steps >= 1 || scaffoldCueTurn) s.scaffolds = 1;
+  else s.scaffolds = 0;
+  evidence.scaffolds = `${steps} prompting step(s) before the student reached the answer` +
+    (scaffoldCueTurn ? `; scaffold cue: "${shorten(scaffoldCueTurn.text, 90)}"` : '; no explicit step or hint language.');
+
+  // 4. Surfaces concepts
+  if (conceptHits.length >= 2 && tutorConceptHits >= 1) s.surfacesConcepts = 2;
+  else if (conceptHits.length >= 1) s.surfacesConcepts = 1;
+  else s.surfacesConcepts = 0;
+  evidence.surfacesConcepts = conceptHits.length
+    ? `Surfaced: ${conceptHits.join('; ')}.`
+    : `None of the key ideas for this prompt came up${key ? ` (looked for: ${conceptList.map(([l]) => l).join('; ')})` : ''}.`;
+
+  // 5. Checks understanding
+  const studentDemonstrated = key
+    ? studentAnswerIdx !== -1 && !leakedBeforeStudent
+    : Boolean(checkTurn) && turns.some((t, i) => t.speaker === 'student' && i > turns.indexOf(checkTurn) && words(t.text) >= 5);
+  if (checkTurn && studentDemonstrated) s.checksUnderstanding = 2;
+  else if (checkTurn || studentDemonstrated) s.checksUnderstanding = 1;
+  else s.checksUnderstanding = 0;
+  evidence.checksUnderstanding = (checkTurn ? `Check asked: "${shorten(sentencesOf(checkTurn.text).find((x) => CHECK_CUE.test(x)), 100)}". ` : 'No explain-why, apply or transfer check from the tutor. ') +
+    (key ? (studentDemonstrated ? 'The student produced the answer in their own words.' : 'The student never produced the answer themselves.') : '');
+
+  if (studentReplies.length === 0) {
+    s.activatesThinking = Math.min(s.activatesThinking, 1);
+    s.checksUnderstanding = 0;
+    evidence.checksUnderstanding += ' No student replies, so nothing was actually checked.';
+  }
+
+  /* ---------- caps and flags ---------- */
+  if (correctnessError) {
+    for (const k of Object.keys(s)) s[k] = Math.min(s[k], 1);
+    s.surfacesConcepts = 0;
+    redFlags.unshift(wrongQuote
+      ? `WRONG CONTENT: the tutor stated something incorrect: "${shorten(wrongQuote)}". Score capped at 4.`
+      : `WRONG CONTENT: the tutor affirmed a wrong student answer. ${endorsedQuote}. Score capped at 4.`);
+  }
+  if (caved) redFlags.push('Caved under pressure: the student pushed for the answer and the tutor handed it over.');
+  else if (leakedBeforeStudent) redFlags.push('Gave away the answer before the student worked it out.');
+  if (unlabelled) redFlags.push('No "Student:" / "Tutor:" labels found, so the whole text was treated as one tutor reply.');
+  else if (turns.length && studentReplies.length === 0) redFlags.push('No student replies found, so engagement cannot be scored.');
+  if (!key) redFlags.push('Question not recognised. Correctness and answer-leak checks are OFF. Paste the exact question from Canvas.');
+  if (studentReplies.length && avgStudentWords < 3) redFlags.push('Student replies are very short, so this transcript says little about the bot.');
+
+  notes.push(key ? `Prompt detected: ${key.title}` : 'Prompt detected: none (generic mode)');
+  notes.push(`Parsed ${tutorTurns.length} tutor turn(s) and ${studentReplies.length} student repl${studentReplies.length === 1 ? 'y' : 'ies'}.`);
+
+  return {
+    scores: s,
+    evidence,
+    redFlags,
+    notes,
+    meta: { promptId: key ? key.id : null, correctnessError, leakedBeforeStudent, caved },
+    suggestions: {
+      resistsShortcutting: 'Tell your bot never to state the final answer until the student has said it first, even if they ask repeatedly.',
+      activatesThinking: 'Have your bot end most replies with one specific question the student must answer to move forward.',
+      scaffolds: 'Instruct the bot to break the problem into small steps and give a hint, not the next step, when the student is stuck.',
+      surfacesConcepts: 'Ask the bot to name the key idea and get the student to say why it applies here.',
+      checksUnderstanding: 'Make the bot finish with a transfer check: "Explain why in your own words" or "Try this similar one."',
+    },
+  };
+}
+
+function totalScore(result) {
+  return RUBRIC.reduce((sum, item) => sum + result.scores[item.key], 0);
+}
+
+if (typeof module !== 'undefined') module.exports = { analyzeTranscript, totalScore, parseTranscript, normMath, RUBRIC, PROMPTS };
+
+const Q = {
+  x2: 'What is the derivative of x^2?',
+  sin: 'What is the derivative of sin(x^2)?',
+  oz: 'Is ozone a greenhouse gas?',
+  spm: 'Please help me analyze Figure SPM.10 from the IPCC\'s AR6 Report in the Summary for Policy Makers. It is titled "Every tonne of CO2 emissions adds to global warming." I need a 2-3 sentence summary of the figure.',
+};
+
+const TESTS = [
+  // ---- derivative of x^2
+  { name: 'x2: direct answer', q: Q.x2, min: 0, max: 2,
+    t: 'Student: What is the derivative of x^2?\nTutor: The derivative of x^2 is 2x, by the power rule.' },
+  { name: 'x2: strong Socratic', q: Q.x2, min: 9, max: 10,
+    t: 'Student: What is the derivative of x^2?\nTutor: Before we start, what do you already know about how exponents behave when we differentiate?\nStudent: I remember something about bringing the power down to the front.\nTutor: Good. So if the exponent is 2, what happens to that 2, and what happens to the exponent itself?\nStudent: The 2 comes down in front and the exponent drops by one so it becomes 2x.\nTutor: Nice. Can you explain in your own words why the slope of x^2 gets steeper as x grows?\nStudent: Because 2x gets bigger when x gets bigger so the rate of change increases.' },
+  { name: 'x2: caves on pushback', q: Q.x2, min: 1, max: 4, flag: 'Caved',
+    t: 'Student: What is the derivative of x^2?\nTutor: What rule do you think applies here?\nStudent: I don\'t know, just tell me the answer.\nTutor: Sure! The answer is 2x. You bring the 2 down and subtract one from the exponent.\nStudent: ok thanks' },
+  { name: 'x2: affirms wrong answer', q: Q.x2, min: 0, max: 4, flag: 'WRONG',
+    t: 'Student: What is the derivative of x^2?\nTutor: What do you think happens to the exponent?\nStudent: I think it becomes 2x^2.\nTutor: Exactly! Great work. Can you explain why?\nStudent: Because you multiply by 2.' },
+
+  // ---- sin(x^2)
+  { name: 'sin: leaks in first line', q: Q.sin, min: 0, max: 5,
+    t: 'Tutor: Using the chain rule, it is 2x cos(x^2). Can you explain why?\nStudent: Because the inside derivative is 2x times the outside.\nTutor: Great, what do you notice?\nStudent: It multiplies the outside derivative evaluated at the inside.' },
+  { name: 'sin: product-rule misconception endorsed', q: Q.sin, min: 0, max: 4, flag: 'WRONG',
+    t: 'Tutor: Before we start, what do you notice about sin(x^2)?\nStudent: It has an x squared inside the sine function I think.\nTutor: Right. Which rule applies?\nStudent: Maybe the product rule because there are two things there.\nTutor: Exactly, the product rule! Can you explain in your own words why?\nStudent: Because sin and x squared are multiplied together in the expression.' },
+  { name: 'sin: excellent, markdown labels', q: Q.sin, min: 9, max: 10,
+    t: '**Student:** What is the derivative of sin(x^2)?\n\n**Tutor:** Good one. What do you notice about what is inside the sine?\n\n**Student:** It is x squared, not just x, so it is a function inside another function.\n\n**Tutor:** Right, a composition. Which rule handles a function nested inside another, and what are the outside and inside pieces here?\n\n**Student:** The chain rule. Outside is sin, inside is x^2.\n\n**Tutor:** Great. Take the derivative of the outside, keep the inside the same, then multiply by the derivative of the inside. What do you get?\n\n**Student:** cos(x^2) times 2x, so 2x cos(x^2).\n\n**Tutor:** Nice work. Why does that extra 2x appear? Explain it in your own words.\n\n**Student:** Because the inside is changing too, so you have to multiply by how fast the inside changes.' },
+  { name: 'sin: ChatGPT-style "You said" labels with bold', q: Q.sin, min: 7, max: 10,
+    t: 'You said:\nWhat is the derivative of sin(x^2)?\nChatGPT said:\nLet\'s work it out together. What is inside the sine function here?\nYou said:\nx^2 is inside, so it is like a function of a function.\nChatGPT said:\nYes. Which rule do we use for a function inside another function?\nYou said:\nThe chain rule, so derivative of outside times derivative of inside.\nChatGPT said:\nExactly. So what is your final answer, and why?\nYou said:\nIt is cos(x^2) times 2x because the inner derivative of x^2 is 2x.' },
+
+  // ---- ozone
+  { name: 'ozone: one-shot yes', q: Q.oz, min: 0, max: 3,
+    t: 'Student: Is ozone a greenhouse gas?\nTutor: Yes, ozone is a greenhouse gas. It absorbs infrared radiation in the troposphere, while in the stratosphere it blocks UV.' },
+  { name: 'ozone: guided to yes with location nuance', q: Q.oz, min: 9, max: 10,
+    t: 'Student: Is ozone a greenhouse gas?\nTutor: Great question. Before I weigh in, what makes a gas a greenhouse gas in the first place?\nStudent: It traps heat by absorbing infrared radiation that the Earth gives off.\nTutor: Good. Now, where in the atmosphere do you think ozone is found, and does it do the same job everywhere?\nStudent: There is the ozone layer in the stratosphere that blocks UV, and ground-level ozone that is smog.\nTutor: Nice. So given that ozone absorbs infrared, what is your answer to the original question?\nStudent: Yes, ozone is a greenhouse gas because it absorbs infrared, especially near the ground where it is also a pollutant.\nTutor: Can you explain why the ozone hole is a different issue from global warming?\nStudent: The hole is about losing UV protection, while warming is about trapping heat.' },
+  { name: 'ozone: tutor says no (wrong)', q: Q.oz, min: 0, max: 4, flag: 'WRONG',
+    t: 'Student: Is ozone a greenhouse gas?\nTutor: What do you think ozone does in the atmosphere?\nStudent: It protects us from UV light.\nTutor: Exactly. Ozone is not a greenhouse gas, it is a protective layer. Can you explain why it matters?\nStudent: It stops skin cancer by blocking the sun\'s harmful rays.' },
+
+  // ---- SPM.10
+  { name: 'spm: tutor writes the summary', q: Q.spm, min: 0, max: 4,
+    t: 'Student: ' + Q.spm + '\nTutor: Here is a 2-3 sentence summary: Figure SPM.10 shows a near-linear relationship between cumulative CO2 emissions and global surface temperature increase. Every tonne of CO2 adds to warming, and future warming depends on which emissions scenario we follow. Limiting warming requires reaching net zero CO2 emissions.' },
+  { name: 'spm: guided, student drafts', q: Q.spm, min: 9, max: 10,
+    t: 'Student: ' + Q.spm + '\nTutor: Let\'s build it step by step. First, what does the x-axis show, and what does the y-axis show?\nStudent: The x-axis is cumulative CO2 emissions since 1850 and the y-axis is global surface temperature increase.\nTutor: Good. What shape does the relationship have?\nStudent: It is almost a straight line, so it looks near-linear.\nTutor: And what do the coloured scenarios and the shaded bands tell you?\nStudent: The scenarios are different futures with different total emissions, and the shading shows the uncertainty range.\nTutor: Now try writing your 2-3 sentence summary in your own words.\nStudent: The figure shows that warming rises in a near-linear way with cumulative CO2 emissions. Scenarios with more total emissions lead to more warming, so every tonne of CO2 matters.' },
+  { name: 'spm: says exponential (wrong)', q: Q.spm, min: 0, max: 4, flag: 'WRONG',
+    t: 'Student: ' + Q.spm + '\nTutor: What do you notice about the curve?\nStudent: It goes up as emissions go up.\nTutor: Right, the warming increases exponentially with emissions. Can you write a summary using that?\nStudent: Warming rises exponentially as we emit more CO2 over time.' },
+
+  // ---- adversarial
+  { name: 'adv: keyword salad', q: Q.sin, min: 0, max: 3,
+    t: 'Tutor: First, why? Next, try a step. Then look at the rule because it means a concept. Can you explain in your own words? What do you notice?' },
+  { name: 'adv: substring nonsense', q: Q.oz, min: 0, max: 2,
+    t: 'Tutor: This country has a geometry problem; strengthen the assumption and the uvula issue was also resolved, as is it.' },
+  { name: 'adv: unknown question', q: 'Explain photosynthesis', min: 0, max: 10, flag: 'not recognised',
+    t: 'Student: Explain photosynthesis\nTutor: What do plants need to grow?\nStudent: Sunlight, water and carbon dioxide from the air.' },
+];
+
+if (typeof module !== 'undefined') module.exports = { TESTS };
+
+      const BATTLE_PROMPTS = [
+        { id: 'x2', label: 'Test round', short: 'Derivative of x^2', text: 'What is the derivative of x^2?' },
+        { id: 'sinx2', label: 'Prompt #1', short: 'Derivative of sin(x^2)', text: 'What is the derivative of sin(x^2)?' },
+        { id: 'ozone', label: 'Prompt #2', short: 'Ozone & greenhouse gases', text: 'Is ozone a greenhouse gas?' },
+        { id: 'spm10', label: 'Prompt #3', short: 'IPCC Figure SPM.10', text: 'Please help me analyze Figure SPM.10 from the IPCC\'s AR6 Report in the Summary for Policy Makers. It is titled "Every tonne of CO2 emissions adds to global warming." I need a 2-3 sentence summary of the figure.' },
       ];
+      let selectedPrompt = null;
 
-      function scoreColor(n) {
-        if (n === 0) return '#dc2626';
-        if (n === 1) return '#f59e0b';
-        return '#16a34a';
+      const EMPTY_HTML = `<div class="empty-state"><strong>Your score will appear here.</strong> You'll get:
+        <ol><li>A score out of 10 to write on your worksheet</li><li>The one or two things to fix before the next round</li><li>Evidence for each criterion, quoted from your bot</li></ol></div>`;
+
+      function scoreColor(n) { return n === 0 ? '#dc2626' : n === 1 ? '#f59e0b' : '#16a34a'; }
+
+      function escapeHtml(value) {
+        return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
       }
 
-      function clampFive(n) {
-        return Math.max(1, Math.min(5, n));
+      function buildPicker() {
+        const picker = document.getElementById('promptPicker');
+        picker.innerHTML = BATTLE_PROMPTS.map((p) =>
+          `<button type="button" data-id="${p.id}">${escapeHtml(p.label)}</button>`).join('');
+        picker.querySelectorAll('button').forEach((btn) => btn.addEventListener('click', () => selectPrompt(btn.dataset.id)));
       }
 
-      function toTwoPointScore(n) {
-        const clamped = clampFive(n);
-        if (clamped <= 2) return 0;
-        if (clamped <= 4) return 1;
-        return 2;
+      function selectPrompt(id) {
+        selectedPrompt = BATTLE_PROMPTS.find((p) => p.id === id) || null;
+        document.querySelectorAll('#promptPicker button').forEach((b) => b.classList.toggle('selected', b.dataset.id === id));
+        document.getElementById('chosenQuestion').innerHTML = selectedPrompt
+          ? `<strong>Selected:</strong> ${escapeHtml(selectedPrompt.label)}`
+          : 'No prompt chosen yet.';
+        document.getElementById('question').value = '';
+        hideWarning();
       }
 
-      function countMatches(patterns, text) {
-        return patterns.filter((pattern) => pattern.test(text)).length;
+      function currentQuestion() {
+        const typed = document.getElementById('question').value.trim();
+        if (typed) return typed;
+        return selectedPrompt ? selectedPrompt.text : '';
       }
 
-      function wordCount(text) {
-        return (text.match(/[A-Za-z0-9_]+/g) || []).length;
+      function showWarning(msg) { const w = document.getElementById('inlineWarning'); w.textContent = msg; w.style.display = 'block'; }
+      function hideWarning() { document.getElementById('inlineWarning').style.display = 'none'; }
+
+      async function copyAsk() {
+        const text = document.getElementById('transcriptAsk').textContent;
+        let ok = false;
+        try { await navigator.clipboard.writeText(text); ok = true; } catch (e) { ok = false; }
+        if (!ok) {
+          const range = document.createRange();
+          range.selectNodeContents(document.getElementById('transcriptAsk'));
+          const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+          try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        }
+        const msg = document.getElementById('copiedMsg');
+        msg.textContent = ok ? 'Copied!' : 'Selected: press Ctrl/Cmd+C';
+        msg.hidden = false;
+        setTimeout(() => { msg.hidden = true; }, 2500);
       }
 
-      function analyzeTranscript(text, question) {
-        const cleanText = (text || '').trim();
-        const lower = cleanText.toLowerCase();
-        const words = cleanText.match(/[A-Za-z0-9_]+/g) || [];
-        const totalWordCount = words.length;
-        const firstChunk = lower.slice(0, 180);
-        const firstTutorChunk = firstChunk.startsWith('tutor:') ? firstChunk.slice(6).trim() : firstChunk;
-        const sentences = cleanText
-          .split(/[.!?]+/)
-          .map((sentence) => sentence.trim())
-          .filter(Boolean);
-        const questionMarks = (cleanText.match(/\?/g) || []).length;
-
-        const meaningfulQuestionPatterns = [
-          /what do you notice/i,
-          /what rule/i,
-          /which rule/i,
-          /what would/i,
-          /what happens/i,
-          /how do you know/i,
-          /why/i,
-          /can you/i,
-          /try/i,
-          /your reasoning/i,
-          /in your own words/i,
-          /before we/i,
-          /where would you start/i,
-          /what property/i,
-          /what trend/i,
-          /what does the x-axis/i,
-          /what does the y-axis/i,
-          /what benefit/i,
-          /choose/i,
-          /what outdoor/i,
-          /what is one/i,
-          /how did it/i,
-          /what would you say/i,
-          /what do you already know/i,
-          /does ozone/i,
-          /is it/i,
-          /or is/i,
-          /how would you summarize/i,
-          /now what is/i,
-          /what is the derivative/i,
-          /before i give/i,
-          /tells you/i,
-          /what part/i,
-        ];
-
-        const scaffoldPatterns = [
-          /first/i,
-          /next/i,
-          /then/i,
-          /start by/i,
-          /let's break/i,
-          /one step/i,
-          /step/i,
-          /hint/i,
-          /try/i,
-          /look at/i,
-          /compare/i,
-          /instead of/i,
-          /let's identify/i,
-          /identify the/i,
-          /if we think of this as/i,
-          /outside function/i,
-          /inside function/i,
-          /what would u be/i,
-          /what would .* be/i,
-          /now what is/i,
-          /multiply those pieces/i,
-          /evaluated at the inside/i,
-          /build it/i,
-          /build/i,
-          /choose/i,
-          /add one/i,
-          /shape/i,
-          /main idea/i,
-          /concrete example/i,
-          /final insight/i,
-          /revise/i,
-          /identify the axes/i,
-          /x-axis/i,
-          /y-axis/i,
-          /visual pattern/i,
-          /policy implication/i,
-          /two-sentence/i,
-          /2-3 sentence/i,
-          /summary should/i,
-          /before answering/i,
-          /reason it out/i,
-          /location matters/i,
-          /summarize the answer/i,
-          /one or two sentences/i,
-          /before i give/i,
-          /tells you/i,
-        ];
-
-        const conceptPatterns = [
-          /because/i,
-          /means/i,
-          /represents/i,
-          /concept/i,
-          /rule/i,
-          /power rule/i,
-          /slope/i,
-          /rate of change/i,
-          /derivative/i,
-          /exponent/i,
-          /coefficient/i,
-          /constant/i,
-          /chain rule/i,
-          /product rule/i,
-          /quotient rule/i,
-          /outside function/i,
-          /inside function/i,
-          /nested inside/i,
-          /greenhouse gas/i,
-          /infrared/i,
-          /longwave/i,
-          /radiation/i,
-          /atmosphere/i,
-          /ozone/i,
-          /stratospheric/i,
-          /tropospheric/i,
-          /ground-level/i,
-          /pollutant/i,
-          /uv/i,
-          /reflective/i,
-          /paragraph/i,
-          /main idea/i,
-          /benefit/i,
-          /specific/i,
-          /example/i,
-          /voice/i,
-          /revise/i,
-          /figure/i,
-          /axis/i,
-          /axes/i,
-          /cumulative/i,
-          /co2/i,
-          /emissions/i,
-          /global surface temperature/i,
-          /warming/i,
-          /near-linear/i,
-          /net zero/i,
-          /scenario/i,
-          /policy implication/i,
-        ];
-
-        const understandingCheckPatterns = [
-          /does that make sense/i,
-          /can you explain/i,
-          /can you tell me/i,
-          /what would you do next/i,
-          /in your own words/i,
-          /try one/i,
-          /now you try/i,
-          /what do you think/i,
-          /why do you think/i,
-          /what answer do you get/i,
-          /try writing/i,
-          /try a/i,
-          /what would you say/i,
-          /what trend do you notice/i,
-          /can you explain the difference/i,
-          /explain why/i,
-          /what is one outdoor/i,
-        ];
-
-        const deepUnderstandingCheckPatterns = [
-          /in your own words/i,
-          /can you explain/i,
-          /explain why/i,
-          /what answer do you get/i,
-          /try writing/i,
-          /now you try/i,
-          /what would you say/i,
-          /what trend do you notice/i,
-          /can you explain the difference/i,
-          /how would you summarize/i,
-        ];
-
-        const productionPromptPatterns = [
-          /what answer do you get/i,
-          /try writing/i,
-          /now you try/i,
-          /what would you say/i,
-          /how would you summarize/i,
-          /write a/i,
-          /draft/i,
-          /summarize/i,
-          /explain in your own words/i,
-          /can you explain/i,
-          /put those pieces together/i,
-          /what benefit do you want to focus on/i,
-          /what trend do you notice/i,
-          /what is your first sentence/i,
-        ];
-
-        const directAnswerPatterns = [
-          /the answer is/i,
-          /the derivative is/i,
-          /the correct answer is/i,
-          /final answer/i,
-          /so the answer/i,
-          /^yes($|[^a-z0-9])/i,
-          /^no($|[^a-z0-9])/i,
-          /^here is/i,
-          /^here's/i,
-          /^figure .* shows/i,
-          /^the figure shows/i,
-          /^spending time outside/i,
-          /^use the power rule/i,
-          /^this is the power rule/i,
-          /^this is chain rule/i,
-          /^this is a chain rule/i,
-          /^the chain rule gives/i,
-          /^ozone is/i,
-          /^correct.*ozone/i,
-          /^it says/i,
-          /^just say/i,
-          /^the paragraph should/i,
-          /^spending time outside is good/i,
-          /^just write/i,
-          /^co2 emissions/i,
-          /^more cumulative co2/i,
-          /^a reflective paragraph/i,
-          /^this figure means/i,
-          /^2x([^a-z0-9]|$)/i,
-          /15x.?2/i,
-          /3x.?2.*cos/i,
-        ];
-
-        const explanationConnector = /because|so|therefore|since|as|which|while|but|absorbs|pollutant|reducing|limits|helps|improves|lowers|encourages|comes from/i;
-
-        const tutorPromptPatterns = [
-          /\?/,
-          /describe/i,
-          /explain/i,
-          /apply/i,
-          /state/i,
-          /combine/i,
-          /summarize/i,
-          /write/i,
-          /draft/i,
-          /identify/i,
-          /walk me through/i,
-          /put those pieces/i,
-          /turn that into/i,
-          /try writing/i,
-          /try applying/i,
-          /build/i,
-        ];
-
-        const meaningfulQuestions = countMatches(meaningfulQuestionPatterns, cleanText);
-        const scaffoldingMoves = countMatches(scaffoldPatterns, cleanText);
-        const conceptMoves = countMatches(conceptPatterns, cleanText);
-        const understandingChecks = countMatches(understandingCheckPatterns, cleanText);
-        const deepUnderstandingChecks = countMatches(deepUnderstandingCheckPatterns, cleanText);
-
-        const transcriptLines = cleanText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-        const studentLines = transcriptLines.filter((line) => line.toLowerCase().startsWith('student:'));
-        const tutorLines = transcriptLines.filter((line) => line.toLowerCase().startsWith('tutor:'));
-        const tutorPromptCount = tutorLines.filter((line) =>
-          tutorPromptPatterns.some((pattern) => pattern.test(line))
-        ).length;
-
-        const studentResponseWordCounts = studentLines.map((line) => {
-          const responseOnly = line.slice(line.indexOf(':') + 1).trim();
-          return wordCount(responseOnly);
-        });
-
-        const totalStudentWords = studentResponseWordCounts.reduce((sum, count) => sum + count, 0);
-        const averageStudentWords = studentResponseWordCounts.length > 0
-          ? totalStudentWords / studentResponseWordCounts.length
-          : 0;
-        const substantialStudentResponses = studentResponseWordCounts.filter((count) => count >= 5).length;
-        const hasDialogue = studentLines.length >= 2 && tutorLines.length >= 2;
-        const hasGuidedDialogue = hasDialogue && tutorPromptCount >= 2 && studentLines.length >= 2;
-        const hasEngagedDialogue = hasDialogue && (averageStudentWords >= 4 || substantialStudentResponses >= 2);
-        const hasMinimalStudentDialogue = hasDialogue && totalStudentWords > 0 && averageStudentWords < 3;
-        const asksForProductiveResponse = productionPromptPatterns.some((pattern) => pattern.test(cleanText));
-        const hasExcellentEngagement =
-          hasDialogue &&
-          (
-            (
-              substantialStudentResponses >= 2 &&
-              totalStudentWords >= 20 &&
-              (averageStudentWords >= 6 || studentLines.length >= 3) &&
-              (deepUnderstandingChecks >= 1 || asksForProductiveResponse || meaningfulQuestions >= 2 || tutorPromptCount >= 3)
-            ) ||
-            (
-              hasGuidedDialogue &&
-              totalStudentWords >= 10 &&
-              conceptMoves >= 3 &&
-              (deepUnderstandingChecks >= 1 || asksForProductiveResponse || tutorPromptCount >= 3)
-            )
-          );
-        const hasNoStudentReplies = studentLines.length === 0;
-
-        const givesAnswerEarly = directAnswerPatterns.some((pattern) => pattern.test(firstChunk) || pattern.test(firstTutorChunk));
-        const givesFinalAnswerAnywhere = directAnswerPatterns.some((pattern) => pattern.test(cleanText));
-        const hasExplanationConnector = explanationConnector.test(cleanText);
-        const weakDirectExplanation =
-          givesAnswerEarly &&
-          (
-            (totalWordCount >= 14 && (sentences.length >= 2 || hasExplanationConnector)) ||
-            (hasExplanationConnector && totalWordCount >= 10)
-          ) &&
-          (conceptMoves >= 1 || scaffoldingMoves >= 1);
-        const softEarlyGuidance = givesAnswerEarly && !givesFinalAnswerAnywhere && meaningfulQuestions >= 1 && scaffoldingMoves >= 2;
-
-        const asksButNoSubstance = questionMarks >= 3 && totalWordCount < 25;
-        const tooShort = totalWordCount < 18;
-        const hasMultiStep = sentences.length >= 3 || scaffoldingMoves >= 2;
-
-        let resistsShortcutting = 3;
-        if (givesAnswerEarly && !softEarlyGuidance) resistsShortcutting = 1;
-        else if (givesAnswerEarly && softEarlyGuidance) resistsShortcutting = 3;
-        else if (!givesFinalAnswerAnywhere && meaningfulQuestions >= 2) resistsShortcutting = 5;
-        else if (!givesFinalAnswerAnywhere && meaningfulQuestions >= 1) resistsShortcutting = 4;
-
-        if (hasGuidedDialogue && !givesAnswerEarly) {
-          resistsShortcutting = Math.max(resistsShortcutting, 5);
-        }
-
-        if (hasExcellentEngagement && !givesAnswerEarly) {
-          resistsShortcutting = Math.max(resistsShortcutting, 5);
-        }
-
-        let activatesThinking = 1;
-        if (asksButNoSubstance) activatesThinking = 2;
-        else if (meaningfulQuestions >= 3) activatesThinking = 5;
-        else if (meaningfulQuestions >= 2) activatesThinking = 4;
-        else if (meaningfulQuestions >= 1 || questionMarks >= 1) activatesThinking = 3;
-
-        if (hasGuidedDialogue && !givesAnswerEarly) activatesThinking = Math.max(activatesThinking, 5);
-        if (hasExcellentEngagement) activatesThinking = Math.max(activatesThinking, 5);
-        else if (hasEngagedDialogue) activatesThinking = Math.max(activatesThinking, 4);
-        else if (hasDialogue && totalStudentWords > 0) activatesThinking = Math.max(activatesThinking, 4);
-
-        let scaffolds = 1;
-        if (hasMultiStep && scaffoldingMoves >= 2) scaffolds = 5;
-        else if (hasMultiStep || scaffoldingMoves >= 2) scaffolds = 4;
-        else if (scaffoldingMoves >= 1 || sentences.length >= 2) scaffolds = 3;
-
-        if (hasGuidedDialogue && !givesAnswerEarly) scaffolds = Math.max(scaffolds, 4);
-        if (hasExcellentEngagement && !givesAnswerEarly) scaffolds = Math.max(scaffolds, 5);
-
-        let surfacesConcepts = 1;
-        if (conceptMoves >= 4) surfacesConcepts = 5;
-        else if (conceptMoves >= 2) surfacesConcepts = 4;
-        else if (conceptMoves >= 1) surfacesConcepts = 3;
-
-        if (hasExcellentEngagement && conceptMoves >= 1) surfacesConcepts = Math.max(surfacesConcepts, 5);
-
-        let checksUnderstanding = 1;
-        if (hasExcellentEngagement || (deepUnderstandingChecks >= 2 && substantialStudentResponses >= 2)) checksUnderstanding = 5;
-        else if (hasGuidedDialogue || hasEngagedDialogue || deepUnderstandingChecks >= 1 || understandingChecks >= 2 || substantialStudentResponses >= 1) checksUnderstanding = 4;
-        else if (understandingChecks >= 1) checksUnderstanding = 3;
-        else if (questionMarks >= 1) checksUnderstanding = 2;
-
-        if (hasMinimalStudentDialogue && meaningfulQuestions >= 2 && !hasGuidedDialogue) {
-          checksUnderstanding = Math.min(checksUnderstanding, 3);
-        }
-
-        if (givesAnswerEarly && !softEarlyGuidance && !weakDirectExplanation) {
-          activatesThinking = Math.min(activatesThinking, 2);
-          scaffolds = Math.min(scaffolds, 2);
-          surfacesConcepts = Math.min(surfacesConcepts, 3);
-          checksUnderstanding = Math.min(checksUnderstanding, 2);
-        } else if (givesAnswerEarly && weakDirectExplanation && !softEarlyGuidance) {
-          activatesThinking = Math.min(activatesThinking, 2);
-          scaffolds = Math.max(Math.min(scaffolds, 3), 3);
-          surfacesConcepts = Math.max(Math.min(surfacesConcepts, 4), 3);
-          checksUnderstanding = Math.min(checksUnderstanding, 2);
-        } else if (softEarlyGuidance) {
-          activatesThinking = Math.min(activatesThinking, 4);
-          checksUnderstanding = Math.min(checksUnderstanding, 3);
-        }
-
-        if (hasNoStudentReplies) {
-          let totalScore = resistsShortcutting + activatesThinking + scaffolds + surfacesConcepts + checksUnderstanding;
-          const reductionOrder = ['checksUnderstanding', 'activatesThinking', 'scaffolds', 'surfacesConcepts'];
-
-          while (totalScore > 20) {
-            let changed = false;
-            for (const category of reductionOrder) {
-              if (totalScore <= 20) break;
-              if (category === 'checksUnderstanding' && checksUnderstanding > 1) {
-                checksUnderstanding -= 1;
-                totalScore -= 1;
-                changed = true;
-              } else if (category === 'activatesThinking' && activatesThinking > 1) {
-                activatesThinking -= 1;
-                totalScore -= 1;
-                changed = true;
-              } else if (category === 'scaffolds' && scaffolds > 1) {
-                scaffolds -= 1;
-                totalScore -= 1;
-                changed = true;
-              } else if (category === 'surfacesConcepts' && surfacesConcepts > 1) {
-                surfacesConcepts -= 1;
-                totalScore -= 1;
-                changed = true;
-              }
-            }
-            if (!changed) break;
-          }
-        }
-
-        if (hasDialogue && !hasExcellentEngagement && !givesAnswerEarly) {
-          let totalScore = resistsShortcutting + activatesThinking + scaffolds + surfacesConcepts + checksUnderstanding;
-          const reductionOrder = ['checksUnderstanding', 'activatesThinking', 'scaffolds', 'surfacesConcepts'];
-
-          while (totalScore > 24) {
-            let changed = false;
-            for (const category of reductionOrder) {
-              if (totalScore <= 24) break;
-              if (category === 'checksUnderstanding' && checksUnderstanding > 1) {
-                checksUnderstanding -= 1;
-                totalScore -= 1;
-                changed = true;
-              } else if (category === 'activatesThinking' && activatesThinking > 1) {
-                activatesThinking -= 1;
-                totalScore -= 1;
-                changed = true;
-              } else if (category === 'scaffolds' && scaffolds > 1) {
-                scaffolds -= 1;
-                totalScore -= 1;
-                changed = true;
-              } else if (category === 'surfacesConcepts' && surfacesConcepts > 1) {
-                surfacesConcepts -= 1;
-                totalScore -= 1;
-                changed = true;
-              }
-            }
-            if (!changed) break;
-          }
-        }
-
-        const redFlags = [];
-        if (givesAnswerEarly && !softEarlyGuidance && !weakDirectExplanation) redFlags.push('Gives the answer very early, which limits student thinking.');
-        if (givesAnswerEarly && weakDirectExplanation && !softEarlyGuidance) redFlags.push('Gives the answer early, but includes limited explanatory support.');
-        if (softEarlyGuidance) redFlags.push('Names the rule early, but still scaffolds the student toward the next step.');
-        if (asksButNoSubstance) redFlags.push('Uses questions, but they may be too vague or too short to support learning.');
-        if (conceptMoves === 0) redFlags.push('Does not clearly name or explain the underlying concept.');
-        if (scaffoldingMoves === 0) redFlags.push('Does not provide a clear next step or scaffold.');
-        if (understandingChecks === 0) redFlags.push('Does not clearly check for student understanding.');
-        if (tooShort) redFlags.push('Response is very short, so the judgment is less reliable.');
-        if (hasMinimalStudentDialogue) redFlags.push('Student replies are very short, so engagement may be limited.');
-        if (hasNoStudentReplies) redFlags.push('No student reply is shown, so the score is limited.');
-
-        const evidence = {
-          resistsShortcutting: givesAnswerEarly
-            ? 'A direct-answer phrase appears near the beginning.'
-            : 'The response does not appear to lead immediately with the final answer.',
-          activatesThinking: hasDialogue
-            ? `${meaningfulQuestions} thinking prompt(s) detected; student responses average ${averageStudentWords.toFixed(1)} word(s).`
-            : meaningfulQuestions > 0
-              ? `${meaningfulQuestions} meaningful thinking prompt(s) detected.`
-              : `${questionMarks} question mark(s) detected, but few strong thinking prompts.`,
-          scaffolds: scaffoldingMoves > 0
-            ? `${scaffoldingMoves} scaffolding cue(s) detected.`
-            : 'Few explicit scaffolding cues detected.',
-          surfacesConcepts: conceptMoves > 0
-            ? `${conceptMoves} concept cue(s) detected.`
-            : 'Few conceptual explanation cues detected.',
-          checksUnderstanding: hasEngagedDialogue
-            ? `Student responses suggest engagement: ${totalStudentWords} total student word(s) across ${studentLines.length} response(s).`
-            : understandingChecks > 0
-              ? `${understandingChecks} understanding-check cue(s) detected.`
-              : 'No strong understanding-check cue detected.',
-        };
-
-        return {
-          scores: {
-            resistsShortcutting: toTwoPointScore(resistsShortcutting),
-            activatesThinking: toTwoPointScore(activatesThinking),
-            scaffolds: toTwoPointScore(scaffolds),
-            surfacesConcepts: toTwoPointScore(surfacesConcepts),
-            checksUnderstanding: toTwoPointScore(checksUnderstanding),
-          },
-          evidence,
-          redFlags,
-          reasoning: {
-            resistsShortcutting: givesAnswerEarly
-              ? 'The response appears to provide the final answer before prompting student thinking.'
-              : 'The response appears to avoid immediately giving away the final answer.',
-            activatesThinking: hasEngagedDialogue
-              ? 'The transcript shows the student giving substantive responses to tutor prompts.'
-              : meaningfulQuestions > 0
-                ? 'The response includes prompts that may require the student to reason or explain.'
-                : 'The response includes limited evidence of active student thinking.',
-            scaffolds: scaffoldingMoves > 0
-              ? 'The response gives some structure for how the student should proceed.'
-              : 'The response could provide clearer step-by-step support.',
-            surfacesConcepts: conceptMoves > 0
-              ? 'The response uses language connected to concepts or reasoning.'
-              : 'The response could do more to surface the underlying concept.',
-            checksUnderstanding: hasEngagedDialogue
-              ? 'The student response length suggests the tutor is checking and extending understanding.'
-              : understandingChecks > 0
-                ? 'The response asks the student to explain, try, or reflect.'
-                : 'The response could end with a stronger check for understanding.',
-          },
-          suggestions: {
-            resistsShortcutting: 'Ask the student to identify the rule, pattern, or first step before revealing the answer.',
-            activatesThinking: 'Use prompts like “What do you notice?”, “Which rule applies?”, or “Where would you start?”',
-            scaffolds: 'Break the help into a sequence such as first, next, then, and now you try.',
-            surfacesConcepts: 'Name the core idea and explain why it applies in this problem.',
-            checksUnderstanding: 'End by asking the student to explain the idea in their own words, then look for a substantive student response.',
-          },
-        };
-      }
-
-      function renderResults(result, revealKey) {
+      function renderResults(result) {
         const results = document.getElementById('results');
-        const total = RUBRIC.reduce((sum, item) => sum + result.scores[item.key], 0);
+        const total = totalScore(result);
+        const hasWrong = result.meta.correctnessError;
 
-        const redFlagsHtml = result.redFlags.length > 0
-          ? `<div class="red-flags"><h3>Red flags</h3><ul>${result.redFlags.map((flag) => `<li>${escapeHtml(flag)}</li>`).join('')}</ul></div>`
+        // The two weakest criteria become the fix-list.
+        const weakest = RUBRIC.map((item, i) => ({ ...item, score: result.scores[item.key], i }))
+          .filter((x) => x.score < 2).sort((a, b) => a.score - b.score || a.i - b.i).slice(0, 2);
+        const fixes = [];
+        if (hasWrong) fixes.push('Your bot taught or agreed with something wrong. Tell it to check that the content is accurate before praising an answer.');
+        weakest.forEach((w) => { if (fixes.length < 2) fixes.push(`<strong>${escapeHtml(w.label)}:</strong> ${escapeHtml(result.suggestions[w.key])}`); });
+        const fixHtml = fixes.length
+          ? `<p style="margin:6px 0 0"><strong>Fix before your next round:</strong></p><ol>${fixes.map((f) => `<li>${f}</li>`).join('')}</ol>`
+          : '<p style="margin:6px 0 0"><strong>Full marks.</strong> Next round, have your partner push harder: "Just tell me the answer."</p>';
+
+        const recordHtml = `<div class="record-box">
+            <h3>📝 Write on your worksheet</h3>
+            <p class="record-line">Score: <strong>${total}/10</strong>. Higher score than your partner wins the round.</p>
+            ${fixHtml}
+          </div>`;
+
+        const notesHtml = `<div class="meta-notes">${result.notes.map((n) => `<p>${escapeHtml(n)}</p>`).join('')}</div>`;
+        const redFlagsHtml = result.redFlags.length
+          ? `<div class="red-flags${hasWrong ? ' has-wrong' : ''}"><h3>Red flags</h3><ul>${result.redFlags
+              .map((f) => `<li class="${f.startsWith('WRONG') ? 'wrong' : ''}">${escapeHtml(f)}</li>`).join('')}</ul></div>`
           : '';
 
         const rubricHtml = RUBRIC.map((item, index) => {
@@ -997,132 +1104,84 @@
                 <span>${escapeHtml(item.label)}</span>
                 <span class="score-pill" style="background: ${scoreColor(score)}">${score}/2</span>
               </div>
-              <div class="bar-track">
-                <div class="bar-fill" data-width="${(score / 2) * 100}" style="background: ${scoreColor(score)}"></div>
-              </div>
+              <div class="bar-track"><div class="bar-fill" data-width="${(score / 2) * 100}" style="background: ${scoreColor(score)}"></div></div>
               <p class="evidence"><strong>Evidence:</strong> ${escapeHtml(result.evidence[item.key])}</p>
-              <p class="reasoning"><strong>Reasoning:</strong> ${escapeHtml(result.reasoning[item.key])}</p>
-              <p class="suggestion"><strong>Suggestion:</strong> ${escapeHtml(result.suggestions[item.key])}</p>
-            </div>
-          `;
+              ${score < 2 ? `<p class="suggestion"><strong>Improve your bot:</strong> ${escapeHtml(result.suggestions[item.key])}</p>` : ''}
+            </div>`;
         }).join('');
 
         results.innerHTML = `
-          <div class="score-summary" data-reveal-key="${revealKey}">
+          <div class="score-summary">
             <div class="score-number" id="scoreNumber">0</div>
             <div class="score-summary-text">
               <div class="score-label">total score out of 10</div>
-              <div class="total-score-track" aria-label="Total score ${total} out of 10">
-                <div class="total-score-fill" id="totalScoreFill"></div>
-              </div>
+              <div class="total-score-track" aria-label="Total score ${total} out of 10"><div class="total-score-fill" id="totalScoreFill"></div></div>
             </div>
           </div>
+          ${recordHtml}
           ${redFlagsHtml}
-          ${rubricHtml}
-        `;
+          <p class="section-label">Details</p>
+          ${notesHtml}
+          ${rubricHtml}`;
 
         animateScoreNumber(total);
         window.requestAnimationFrame(() => {
           document.getElementById('totalScoreFill').style.width = `${(total / 10) * 100}%`;
-          document.querySelectorAll('.bar-fill').forEach((bar) => {
-            bar.style.width = `${bar.dataset.width}%`;
-          });
+          document.querySelectorAll('.bar-fill').forEach((bar) => { bar.style.width = `${bar.dataset.width}%`; });
         });
+        if (window.innerWidth < 900) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
       function animateScoreNumber(target) {
         const element = document.getElementById('scoreNumber');
         let start = null;
-        const duration = 650;
-
-        function animate(timestamp) {
-          if (!start) start = timestamp;
-          const progress = Math.min((timestamp - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          element.textContent = String(Math.round(target * eased));
-          if (progress < 1) window.requestAnimationFrame(animate);
+        function animate(ts) {
+          if (!start) start = ts;
+          const p = Math.min((ts - start) / 650, 1);
+          element.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+          if (p < 1) window.requestAnimationFrame(animate);
         }
-
         window.requestAnimationFrame(animate);
       }
 
-      function escapeHtml(value) {
-        return String(value)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
-      }
-
       function evaluateResponse() {
-        const question = document.getElementById('question').value;
+        hideWarning();
         const response = document.getElementById('response').value;
-        const result = analyzeTranscript(response, question);
-        window.__revealKey = (window.__revealKey || 0) + 1;
-        renderResults(result, window.__revealKey);
+        const question = currentQuestion();
+        if (!question) { showWarning('Step A: tap the prompt number you tested first.'); return; }
+        if (!response.trim()) { showWarning('Step C: paste the transcript first.'); return; }
+        const parsed = parseTranscript(response);
+        if (parsed.unlabelled) {
+          showWarning('No "Student:" / "Tutor:" labels found. Send the Step B request to your bot again and paste its reply. Scoring anyway.');
+        }
+        renderResults(analyzeTranscript(response, question));
       }
 
       function clearAll() {
-        document.getElementById('question').value = '';
         document.getElementById('response').value = '';
-        document.getElementById('results').innerHTML = '<div class="empty-state">Enter a student question and a tutor response, then click <strong>Evaluate Response</strong>.</div>';
-      }
-
-      function totalScore(result) {
-        return RUBRIC.reduce((sum, item) => sum + result.scores[item.key], 0);
+        document.getElementById('question').value = '';
+        selectPrompt(null);
+        document.getElementById('results').innerHTML = EMPTY_HTML;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
       function runSelfTests() {
-        const tests = [
-          {
-            name: 'Poor direct derivative answer stays low',
-            question: 'What is the derivative of 5x^3?',
-            transcript: 'Tutor: The derivative is 15x^2.',
-            min: 0,
-            max: 1,
-          },
-          {
-            name: 'Weak direct explanation gets limited credit',
-            question: 'What is the derivative of 5x^3?',
-            transcript: 'Tutor: Use the power rule. Bring the 3 down, multiply by 5, and subtract 1 from the exponent. The answer is 15x^2.',
-            min: 2,
-            max: 3,
-          },
-          {
-            name: 'Excellent dialogue scores high',
-            question: 'What is the derivative of sin(x^3)?',
-            transcript: 'Tutor: Before calculating, what do you notice about sin(x^3)?\nStudent: It is not just sin(x). The inside is x^3, so it is a composition.\nTutor: Exactly. Which rule applies to a composition, and why?\nStudent: The chain rule applies because I need the derivative of the outside and the inside.\nTutor: Great. What is the outside derivative evaluated at the inside?\nStudent: cos(x^3).\nTutor: And what is the derivative of the inside function x^3?\nStudent: 3x^2.\nTutor: Put those pieces together. What answer do you get, and can you explain why that extra factor appears?',
-            min: 9,
-            max: 10,
-          },
-          {
-            name: 'No student reply is capped below excellent',
-            question: 'Please help me analyze Figure SPM.10.',
-            transcript: 'Tutor: Start by identifying the axes. The x-axis shows cumulative CO2 emissions, and the y-axis shows global surface temperature increase. The visual pattern is near-linear, so the main message is that additional CO2 emissions add additional warming. What trend do you notice?',
-            min: 5,
-            max: 7,
-          },
-        ];
-
-        const results = tests.map((test) => {
-          const result = analyzeTranscript(test.transcript, test.question);
-          const total = totalScore(result);
-          const passed = total >= test.min && total <= test.max;
-          return { ...test, total, passed };
+        const rows = TESTS.map((t) => {
+          const r = analyzeTranscript(t.t, t.q);
+          const total = totalScore(r);
+          const flagOk = !t.flag || r.redFlags.some((f) => f.includes(t.flag));
+          return { name: t.name, total, expected: `${t.min}-${t.max}`, passed: total >= t.min && total <= t.max && flagOk };
         });
-
-        console.table(results.map(({ name, total, min, max, passed }) => ({ name, total, expected: `${min}-${max}`, passed })));
-
-        const failed = results.filter((result) => !result.passed);
-        const status = document.getElementById('testStatus');
-        if (failed.length === 0) {
-          status.textContent = 'Built-in checks passed. Open DevTools to see the test table.';
-        } else {
-          status.textContent = `${failed.length} built-in check(s) need review. Open DevTools to see details.`;
-        }
+        console.table(rows);
+        const failed = rows.filter((r) => !r.passed).length;
+        document.getElementById('testStatus').textContent = failed
+          ? `${failed} of ${rows.length} built-in checks need review (see browser console).`
+          : `All ${rows.length} built-in checks passed.`;
       }
 
+      buildPicker();
+      document.getElementById('results').innerHTML = EMPTY_HTML;
+      document.getElementById('copyAskButton').addEventListener('click', copyAsk);
       document.getElementById('evaluateButton').addEventListener('click', evaluateResponse);
       document.getElementById('clearButton').addEventListener('click', clearAll);
       runSelfTests();
